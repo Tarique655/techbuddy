@@ -593,33 +593,42 @@ export default function ChatScreen() {
         )}
 
         <View style={styles.composer}>
-          <Pressable
-            onPress={handlePickFromGallery}
-            disabled={isSending}
-            accessibilityRole="button"
-            accessibilityLabel={t("gallery_a11y")}
-            style={({ pressed }) => [
-              styles.iconButton,
-              isSending && styles.iconButtonDisabled,
-              pressed && styles.iconButtonPressed,
-            ]}
-          >
-            <Ionicons name="images-outline" size={26} color="#2A6CF6" />
-          </Pressable>
-
-          <Pressable
-            onPress={handleTakePhoto}
-            disabled={isSending}
-            accessibilityRole="button"
-            accessibilityLabel={t("camera_a11y")}
-            style={({ pressed }) => [
-              styles.iconButton,
-              isSending && styles.iconButtonDisabled,
-              pressed && styles.iconButtonPressed,
-            ]}
-          >
-            <Ionicons name="camera" size={28} color="#2A6CF6" />
-          </Pressable>
+          {/*
+            Camera + gallery stacked vertically as a slim column on the
+            left. Compact 32×32 visual size with hitSlop expanding the
+            tap zone to senior-friendly 48px+. Frees up horizontal room
+            for the input.
+          */}
+          <View style={styles.iconColumn}>
+            <Pressable
+              onPress={handleTakePhoto}
+              disabled={isSending}
+              accessibilityRole="button"
+              accessibilityLabel={t("camera_a11y")}
+              hitSlop={10}
+              style={({ pressed }) => [
+                styles.iconButtonSmall,
+                isSending && styles.iconButtonDisabled,
+                pressed && styles.iconButtonPressed,
+              ]}
+            >
+              <Ionicons name="camera" size={22} color="#2A6CF6" />
+            </Pressable>
+            <Pressable
+              onPress={handlePickFromGallery}
+              disabled={isSending}
+              accessibilityRole="button"
+              accessibilityLabel={t("gallery_a11y")}
+              hitSlop={10}
+              style={({ pressed }) => [
+                styles.iconButtonSmall,
+                isSending && styles.iconButtonDisabled,
+                pressed && styles.iconButtonPressed,
+              ]}
+            >
+              <Ionicons name="images-outline" size={20} color="#2A6CF6" />
+            </Pressable>
+          </View>
 
           <TextInput
             value={input}
@@ -653,7 +662,7 @@ export default function ChatScreen() {
               accessibilityRole="button"
               accessibilityLabel={t("mic_listening_a11y")}
               style={({ pressed }) => [
-                styles.sendButton,
+                styles.primaryCircle,
                 styles.stopButton,
                 pressed && styles.sendButtonPressed,
               ]}
@@ -667,12 +676,12 @@ export default function ChatScreen() {
               accessibilityRole="button"
               accessibilityLabel={t("send_a11y")}
               style={({ pressed }) => [
-                styles.sendButton,
+                styles.primaryCircle,
                 isSending && styles.sendButtonDisabled,
                 pressed && styles.sendButtonPressed,
               ]}
             >
-              <Text style={styles.sendButtonText}>{t("send")}</Text>
+              <Ionicons name="arrow-up" size={26} color="#FFFFFF" />
             </Pressable>
           ) : (
             <Pressable
@@ -681,7 +690,7 @@ export default function ChatScreen() {
               accessibilityRole="button"
               accessibilityLabel={t("mic_a11y")}
               style={({ pressed }) => [
-                styles.sendButton,
+                styles.primaryCircle,
                 (isSending || voice.state === "starting") &&
                   styles.sendButtonDisabled,
                 pressed && styles.sendButtonPressed,
@@ -981,10 +990,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     gap: 8,
   },
-  iconButton: {
-    minHeight: 52,
-    minWidth: 52,
-    borderRadius: 18,
+  // Slim vertical column on the left of the composer that holds the
+  // camera + gallery icons stacked. Frees up horizontal room for the
+  // text input compared to two side-by-side buttons.
+  iconColumn: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 4,
+  },
+  iconButtonSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
     backgroundColor: "#F1F4FB",
     alignItems: "center",
     justifyContent: "center",
@@ -1015,11 +1033,13 @@ const styles = StyleSheet.create({
   bubbleTextWithImage: {
     marginTop: 10,
   },
-  sendButton: {
-    minHeight: 56,
-    minWidth: 80,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+  // Circular primary action button — adapts between Mic / Stop / Send
+  // depending on composer state. Same position so the senior never has
+  // to think about which button to tap.
+  primaryCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: "#2A6CF6",
     alignItems: "center",
     justifyContent: "center",
@@ -1029,11 +1049,6 @@ const styles = StyleSheet.create({
   },
   sendButtonPressed: {
     opacity: 0.85,
-  },
-  sendButtonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "600",
   },
   stopButton: {
     backgroundColor: "#C8312D",

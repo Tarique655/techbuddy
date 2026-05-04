@@ -97,6 +97,15 @@ const STRINGS = {
     msg_input_a11y: "Message to Buddy",
     camera_a11y: "Take a photo to show Buddy",
     gallery_a11y: "Pick a screenshot or photo to send to Buddy",
+    mic_a11y: "Tap to speak to Buddy instead of typing",
+    mic_listening_a11y: "Tap to stop listening",
+    voice_listening_hint: "Listening… speak naturally, then pause when you're done.",
+    alert_mic_permission_title: "Microphone permission needed",
+    alert_mic_permission_body:
+      "TechBuddy needs microphone access to hear your voice. Please allow it in your phone's Settings.",
+    alert_voice_failed_title: "Couldn't hear you",
+    alert_voice_failed_body:
+      "Something went wrong with the microphone. Please try again.",
 
     // Settings ------------------------------------------------------------
     settings: "Settings",
@@ -329,6 +338,16 @@ const STRINGS = {
     msg_input_a11y: "Message à Buddy",
     camera_a11y: "Prendre une photo pour la montrer à Buddy",
     gallery_a11y: "Choisir une capture d'écran ou une photo à envoyer à Buddy",
+    mic_a11y: "Toucher pour parler à Buddy au lieu de taper",
+    mic_listening_a11y: "Toucher pour arrêter l'écoute",
+    voice_listening_hint:
+      "À l'écoute… parlez naturellement, puis faites une pause quand vous avez terminé.",
+    alert_mic_permission_title: "Permission du microphone requise",
+    alert_mic_permission_body:
+      "TechBuddy a besoin d'accéder au microphone pour entendre votre voix. Veuillez l'autoriser dans les paramètres de votre téléphone.",
+    alert_voice_failed_title: "Impossible de vous entendre",
+    alert_voice_failed_body:
+      "Une erreur est survenue avec le microphone. Veuillez réessayer.",
 
     settings: "Paramètres",
     settings_a11y: "Ouvrir les paramètres",

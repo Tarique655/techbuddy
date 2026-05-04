@@ -34,6 +34,7 @@ import { useT, type StringKey } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
 import { useAuth } from "@/lib/auth";
+import { useVoiceInput } from "@/lib/use-voice-input";
 
 type Bubble = ChatMessage & {
   id: string;
@@ -137,6 +138,7 @@ export default function ChatScreen() {
   const haptics = useHaptics();
   const { user } = useAuth();
   const seniorName = user?.name ?? "";
+  const voice = useVoiceInput(language);
   const listRef = useRef<FlatList<Bubble>>(null);
 
   // Two ways to land on this screen:
@@ -257,6 +259,50 @@ export default function ChatScreen() {
       Speech.stop();
     };
   }, []);
+
+  // Pipe the live voice transcript into the composer's input field as the
+  // senior speaks. While listening, every interim result replaces the text;
+  // after auto-stop, the final transcript stays in the input so they can
+  // edit before tapping Send.
+  useEffect(() => {
+    if (voice.state === "listening" && voice.transcript) {
+      setInput(voice.transcript);
+    }
+  }, [voice.state, voice.transcript]);
+
+  // Surface voice errors as friendly alerts. We deliberately ignore the
+  // "permission_denied" code here because the user already saw the OS
+  // prompt; only show our own alert when we have something extra to say.
+  useEffect(() => {
+    if (!voice.error) return;
+    if (voice.error.code === "permission_denied") {
+      Alert.alert(
+        t("alert_mic_permission_title"),
+        t("alert_mic_permission_body"),
+        [{ text: t("alert_ok") }]
+      );
+    } else {
+      Alert.alert(
+        t("alert_voice_failed_title"),
+        t("alert_voice_failed_body"),
+        [{ text: t("alert_ok") }]
+      );
+    }
+  }, [voice.error, t]);
+
+  /** Senior tapped the mic. Kick off recognition. */
+  function handleStartVoice() {
+    if (isSending || voice.state !== "idle") return;
+    haptics.selection();
+    voice.start();
+  }
+
+  /** Senior tapped stop while listening. */
+  function handleStopVoice() {
+    if (voice.state !== "listening") return;
+    haptics.selection();
+    voice.stop();
+  }
 
   /**
    * Send a turn. Either text-only (from the composer) or with an attached
@@ -578,29 +624,72 @@ export default function ChatScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder={t("type_placeholder")}
+            placeholder={
+              voice.state === "listening"
+                ? t("voice_listening_hint")
+                : t("type_placeholder")
+            }
             placeholderTextColor="#8E96A8"
             multiline
             style={[
               styles.input,
               { fontSize: 20 * settings.fontScale },
+              voice.state === "listening" && styles.inputListening,
             ]}
-            editable={!isSending}
+            editable={!isSending && voice.state !== "listening"}
             accessibilityLabel={t("msg_input_a11y")}
           />
-          <Pressable
-            onPress={handleSend}
-            disabled={!input.trim() || isSending}
-            accessibilityRole="button"
-            accessibilityLabel={t("send_a11y")}
-            style={({ pressed }) => [
-              styles.sendButton,
-              (!input.trim() || isSending) && styles.sendButtonDisabled,
-              pressed && styles.sendButtonPressed,
-            ]}
-          >
-            <Text style={styles.sendButtonText}>{t("send")}</Text>
-          </Pressable>
+          {/*
+            Adaptive primary button. Three states, same position:
+              - listening    → red Stop button
+              - has text     → blue Send button
+              - empty + idle → blue Mic button
+            One button, no decisions for the senior to make about which
+            action to use.
+          */}
+          {voice.state === "listening" ? (
+            <Pressable
+              onPress={handleStopVoice}
+              accessibilityRole="button"
+              accessibilityLabel={t("mic_listening_a11y")}
+              style={({ pressed }) => [
+                styles.sendButton,
+                styles.stopButton,
+                pressed && styles.sendButtonPressed,
+              ]}
+            >
+              <Ionicons name="stop" size={22} color="#FFFFFF" />
+            </Pressable>
+          ) : input.trim() ? (
+            <Pressable
+              onPress={handleSend}
+              disabled={isSending}
+              accessibilityRole="button"
+              accessibilityLabel={t("send_a11y")}
+              style={({ pressed }) => [
+                styles.sendButton,
+                isSending && styles.sendButtonDisabled,
+                pressed && styles.sendButtonPressed,
+              ]}
+            >
+              <Text style={styles.sendButtonText}>{t("send")}</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={handleStartVoice}
+              disabled={isSending || voice.state === "starting"}
+              accessibilityRole="button"
+              accessibilityLabel={t("mic_a11y")}
+              style={({ pressed }) => [
+                styles.sendButton,
+                (isSending || voice.state === "starting") &&
+                  styles.sendButtonDisabled,
+                pressed && styles.sendButtonPressed,
+              ]}
+            >
+              <Ionicons name="mic" size={26} color="#FFFFFF" />
+            </Pressable>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -945,5 +1034,13 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
+  },
+  stopButton: {
+    backgroundColor: "#C8312D",
+  },
+  inputListening: {
+    backgroundColor: "#FFF3F2",
+    borderWidth: 2,
+    borderColor: "#C8312D",
   },
 });

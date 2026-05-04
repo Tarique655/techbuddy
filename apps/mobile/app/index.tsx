@@ -36,8 +36,30 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/*
+          Brand row: spacer | logo (centered) | settings cog. Inline flex
+          keeps the cog vertically aligned with the TECHBUDDY wordmark and
+          keeps it below the system bar / display cutout (Galaxy S10+
+          punch-hole was overlapping the previous absolute-positioned cog).
+        */}
         <View style={styles.brandRow}>
+          <View style={styles.brandSpacer} />
           <Text style={styles.brand}>TECHBUDDY</Text>
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              router.push("/settings");
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings_a11y")}
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.settingsButton,
+              pressed && styles.settingsButtonPressed,
+            ]}
+          >
+            <Ionicons name="settings-outline" size={22} color="#2A6CF6" />
+          </Pressable>
         </View>
 
         <View style={styles.greetingBlock}>
@@ -57,6 +79,9 @@ export default function HomeScreen() {
           />
         </View>
 
+        {/* Spacer pushes the history button to the bottom of the viewport. */}
+        <View style={styles.flexSpacer} />
+
         <View style={styles.footer}>
           <LargeButton
             variant="secondary"
@@ -65,29 +90,11 @@ export default function HomeScreen() {
           />
         </View>
       </ScrollView>
-
-      {/*
-        Settings gear, sticky in the top-right corner. Sits outside the
-        ScrollView so it stays in place as the senior scrolls.
-      */}
-      <Pressable
-        onPress={() => {
-          haptics.selection();
-          router.push("/settings");
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={t("settings_a11y")}
-        hitSlop={10}
-        style={({ pressed }) => [
-          styles.settingsButton,
-          pressed && styles.settingsButtonPressed,
-        ]}
-      >
-        <Ionicons name="settings-outline" size={22} color="#2A6CF6" />
-      </Pressable>
     </SafeAreaView>
   );
 }
+
+const SETTINGS_BUTTON_SIZE = 40;
 
 const styles = StyleSheet.create({
   safe: {
@@ -95,19 +102,40 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingBottom: 24,
   },
   brandRow: {
-    paddingTop: 8,
-    paddingBottom: 12,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  brandSpacer: {
+    // Same width as the settings button so the brand text stays optically
+    // centered. Height matches too so vertical alignment is symmetric.
+    width: SETTINGS_BUTTON_SIZE,
+    height: SETTINGS_BUTTON_SIZE,
   },
   brand: {
     fontSize: 18,
     fontWeight: "700",
     letterSpacing: 1,
     color: "#2A6CF6",
+  },
+  settingsButton: {
+    width: SETTINGS_BUTTON_SIZE,
+    height: SETTINGS_BUTTON_SIZE,
+    borderRadius: 999,
+    backgroundColor: "#F1F4FB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingsButtonPressed: {
+    backgroundColor: "#E4ECFB",
+    transform: [{ scale: 0.96 }],
   },
   greetingBlock: {
     marginBottom: 32,
@@ -124,24 +152,13 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   heroBlock: {
-    marginBottom: 40,
+    marginBottom: 24,
+  },
+  flexSpacer: {
+    flex: 1,
+    minHeight: 16,
   },
   footer: {
-    marginTop: 8,
-  },
-  settingsButton: {
-    position: "absolute",
-    top: 8,
-    right: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    backgroundColor: "#F1F4FB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  settingsButtonPressed: {
-    backgroundColor: "#E4ECFB",
-    transform: [{ scale: 0.96 }],
+    paddingTop: 8,
   },
 });

@@ -1,17 +1,19 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
-    "version": "1.0.0",
+    "name": "TechBuddy",
+    "slug": "techbuddy",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "techbuddy",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tariq.techbuddy"
     },
     "android": {
+      "package": "com.tariq.techbuddy",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -19,7 +21,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -38,11 +43,31 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "TechBuddy needs camera access so you can show Buddy what's on your screen.",
+          "photosPermission": "TechBuddy needs access to your photos so you can pick a screenshot to send to Buddy."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "TechBuddy needs microphone access so you can speak to Buddy instead of typing.",
+          "speechRecognitionPermission": "TechBuddy needs speech recognition so it can turn your spoken words into text for Buddy."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "658f1af3-5e35-430a-897c-c4f54de441b0"
+      }
     }
   }
 }

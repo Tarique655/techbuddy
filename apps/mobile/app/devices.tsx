@@ -90,7 +90,6 @@ export default function DevicesScreen() {
       >
         <View style={styles.intro}>
           <Text style={styles.introTitle}>{t("devices_q")}</Text>
-          <Text style={styles.introBody}>{t("devices_subtitle")}</Text>
         </View>
 
         <View style={styles.grid}>

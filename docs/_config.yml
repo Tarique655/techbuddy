@@ -1,7 +1,8 @@
 # GitHub Pages / Jekyll config for the docs site.
-# Renders docs/*.md as readable HTML at https://<user>.github.io/techbuddy/
+# Renders docs/*.md as readable HTML at https://<user>.github.io/techbuddy/.
+# Files are served at /privacy.html and /terms.html — clean enough for a
+# privacy/terms link in the app.
 
 title: TechBuddy
 description: A friendly tech-support app for seniors.
 theme: jekyll-theme-cayman
-permalink: /:basename

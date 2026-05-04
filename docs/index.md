@@ -1,7 +1,3 @@
----
-permalink: /
----
-
 # TechBuddy
 
 TechBuddy is a friendly tech-support app for seniors. It helps with computers, phones, Wi-Fi, and other tech problems through a calm, plain-English AI assistant called Buddy.

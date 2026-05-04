@@ -162,8 +162,8 @@ export default function SettingsScreen() {
 // Public URLs hosted on GitHub Pages (docs/ folder of the repo)
 // ============================================================================
 
-const PRIVACY_URL = "https://tarique655.github.io/techbuddy/privacy";
-const TERMS_URL = "https://tarique655.github.io/techbuddy/terms";
+const PRIVACY_URL = "https://tarique655.github.io/techbuddy/privacy.html";
+const TERMS_URL = "https://tarique655.github.io/techbuddy/terms.html";
 
 // ============================================================================
 // Building blocks

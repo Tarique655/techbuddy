@@ -26,6 +26,9 @@ const EnvSchema = z.object({
   // before opening up to more users.
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().nonnegative().default(20),
   RATE_LIMIT_PER_HOUR: z.coerce.number().int().nonnegative().default(100),
+  // Optional. Set in production via Render dashboard so backend errors
+  // bubble up to Sentry. Local dev leaves it unset and Sentry no-ops.
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

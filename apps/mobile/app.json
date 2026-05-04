@@ -38,9 +38,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#2A6CF6",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#2A6CF6"
           }
         }
       ],
@@ -56,6 +56,14 @@
         {
           "microphonePermission": "TechBuddy needs microphone access so you can speak to Buddy instead of typing.",
           "speechRecognitionPermission": "TechBuddy needs speech recognition so it can turn your spoken words into text for Buddy."
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "techbuddy-mobile",
+          "organization": "teekaylabs"
         }
       ]
     ],

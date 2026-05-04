@@ -1,5 +1,11 @@
+// Sentry instrumentation MUST be the first import — it patches Node's
+// HTTP layer for auto-instrumentation, which only works if it loads
+// before any framework code does.
+import "./instrument.js";
+
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import * as Sentry from "@sentry/node";
 
 import { env } from "./lib/env.js";
 import { registerAuth } from "./lib/auth.js";
@@ -33,6 +39,11 @@ await fastify.register(cors, {
   // X-User-Id is a custom header, so preflight needs to allow it explicitly.
   allowedHeaders: ["Content-Type", "X-User-Id"],
 });
+
+// Sentry's Fastify integration. Captures unhandled errors in route
+// handlers and bubbles them to the Sentry dashboard. No-ops if
+// SENTRY_DSN wasn't set — instrument.ts didn't init then.
+Sentry.setupFastifyErrorHandler(fastify);
 
 // Auth hook MUST register before the route registrations below, so its
 // pre-handler covers them. Allowlisted paths (/healthz, POST /v1/users)

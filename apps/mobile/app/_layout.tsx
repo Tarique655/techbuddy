@@ -12,6 +12,21 @@ import "react-native-reanimated";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { LanguageProvider } from "@/lib/i18n";
 import { SettingsProvider } from "@/lib/settings";
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://9867d2b221e97a8f4495a69eac6583b8@o4511332839325696.ingest.us.sentry.io/4511332857217024',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: false,
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 /**
  * Root layout for the TechBuddy mobile app.
@@ -20,7 +35,7 @@ import { SettingsProvider } from "@/lib/settings";
  * Seniors often have system theme preferences set unintentionally and
  * dark/light flipping is a usability problem we want to avoid.
  */
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
   return (
     <LanguageProvider>
       <SettingsProvider>
@@ -38,7 +53,7 @@ export default function RootLayout() {
       </SettingsProvider>
     </LanguageProvider>
   );
-}
+});
 
 /**
  * Routes between /onboarding and the rest of the app based on auth state.

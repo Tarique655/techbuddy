@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { Device, MessageRole, Prisma } from "@prisma/client";
+import * as Sentry from "@sentry/node";
 
 import { anthropic, BUDDY_MODEL_CONFIG, deviceContextLine } from "../lib/buddy.js";
 import { db } from "../lib/db.js";
@@ -269,6 +270,10 @@ export async function chatRoutes(fastify: FastifyInstance) {
             { err, sessionId: session.id },
             "background summary failed"
           );
+          Sentry.captureException(err, {
+            tags: { route: "chat", job: "background_summary" },
+            extra: { sessionId: session.id, userId },
+          });
         }
       })();
 
@@ -285,6 +290,10 @@ export async function chatRoutes(fastify: FastifyInstance) {
       // it really happened from the senior's perspective. The client will
       // retry, and the next attempt will append a new assistant turn.
       request.log.error({ err, sessionId: session.id }, "anthropic call failed");
+      Sentry.captureException(err, {
+        tags: { route: "chat", upstream: "anthropic" },
+        extra: { sessionId: session.id, userId },
+      });
       return reply.code(502).send({
         error: "upstream_error",
         message: "Buddy is having trouble right now. Please try again.",

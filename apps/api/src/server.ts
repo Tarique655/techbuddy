@@ -10,6 +10,7 @@ import * as Sentry from "@sentry/node";
 import { env } from "./lib/env.js";
 import { registerAuth } from "./lib/auth.js";
 import { chatRoutes } from "./routes/chat.js";
+import { debugRoutes } from "./routes/debug.js";
 import { sessionsRoutes } from "./routes/sessions.js";
 import { userContextRoutes } from "./routes/user-context.js";
 import { userRoutes } from "./routes/users.js";
@@ -60,6 +61,7 @@ await fastify.register(userRoutes);
 await fastify.register(chatRoutes);
 await fastify.register(sessionsRoutes);
 await fastify.register(userContextRoutes);
+await fastify.register(debugRoutes);
 
 try {
   // Bind to 0.0.0.0 so the senior's phone (on the same Wi-Fi as the dev

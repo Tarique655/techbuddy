@@ -1,4 +1,5 @@
 import {
+  Alert,
   Linking,
   Pressable,
   ScrollView,
@@ -10,7 +11,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Sentry from "@sentry/react-native";
 
+import { useAuth } from "@/lib/auth";
 import { useT, type Language } from "@/lib/i18n";
 import {
   useSettings,
@@ -23,6 +26,7 @@ export default function SettingsScreen() {
   const { t, language, setLanguage } = useT();
   const { settings, setSetting } = useSettings();
   const haptics = useHaptics();
+  const { user } = useAuth();
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -152,6 +156,44 @@ export default function SettingsScreen() {
               Linking.openURL(TERMS_URL).catch(() => {});
             }}
           />
+        </Section>
+
+        {/* Help (diagnostic) ----------------------------------------- */}
+        {/*
+          Sends a Sentry event tagged with the user's id. Doubles as:
+          (1) a way for us to verify Sentry is wired up end-to-end, and
+          (2) a real support feature — a senior (or family member) can
+          tap this when the app feels off and we'll see context in Sentry.
+        */}
+        <Section title="Help">
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              Sentry.captureException(
+                new Error(
+                  `TechBuddy mobile diagnostic — user ${user?.id ?? "unknown"} at ${new Date().toISOString()}`
+                ),
+                {
+                  tags: { kind: "user-diagnostic", platform: "mobile" },
+                  extra: { userName: user?.name ?? null },
+                }
+              );
+              Alert.alert(
+                "Diagnostic sent",
+                "Thank you. Our team has been notified and will look into it.",
+                [{ text: "OK" }]
+              );
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Send diagnostic to support"
+            style={({ pressed }) => [
+              styles.legalRow,
+              pressed && styles.legalRowPressed,
+            ]}
+          >
+            <Text style={styles.legalLabel}>Send diagnostic to support</Text>
+            <Ionicons name="paper-plane-outline" size={18} color="#5A6173" />
+          </Pressable>
         </Section>
       </ScrollView>
     </SafeAreaView>

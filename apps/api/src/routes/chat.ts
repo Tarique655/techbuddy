@@ -4,6 +4,7 @@ import { Device, MessageRole, Prisma } from "@prisma/client";
 
 import { anthropic, BUDDY_MODEL_CONFIG, deviceContextLine } from "../lib/buddy.js";
 import { db } from "../lib/db.js";
+import { checkChatRateLimit } from "../lib/rate-limit.js";
 import { summarizeAndSave } from "../lib/summarize.js";
 
 /**
@@ -72,6 +73,28 @@ export async function chatRoutes(fastify: FastifyInstance) {
     const { messages, seniorName, device, sessionId, image, language } =
       parse.data;
     const userId = request.userId;
+
+    // -------------------------------------------------------------------------
+    // Rate limit check.
+    //
+    // Cheap in-memory check — no DB, no Anthropic call cost. Catches tight
+    // loops and adversarial usage before they can rack up a bill. Friendly
+    // 429 with a Retry-After header so the client can back off gracefully.
+    // -------------------------------------------------------------------------
+    const rl = checkChatRateLimit(userId);
+    if (!rl.allowed) {
+      request.log.warn(
+        { userId, reason: rl.reason, retryAfterSec: rl.retryAfterSec },
+        "rate limit exceeded"
+      );
+      reply.header("Retry-After", String(rl.retryAfterSec));
+      return reply.code(429).send({
+        error: "rate_limit_exceeded",
+        message:
+          "You're sending messages too quickly. Please wait a moment before trying again.",
+        retryAfterSec: rl.retryAfterSec,
+      });
+    }
 
     // -------------------------------------------------------------------------
     // Resolve or create the session.

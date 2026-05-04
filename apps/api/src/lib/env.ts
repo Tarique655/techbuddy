@@ -21,6 +21,11 @@ const EnvSchema = z.object({
     .string()
     .default("http://localhost:3000,http://localhost:19006,http://localhost:8081")
     .transform((s) => s.split(",").map((o) => o.trim()).filter(Boolean)),
+  // Per-user chat rate limits. Set to 0 to disable a window.
+  // Defaults are tuned for single-user beta — bump in Render dashboard
+  // before opening up to more users.
+  RATE_LIMIT_PER_MINUTE: z.coerce.number().int().nonnegative().default(20),
+  RATE_LIMIT_PER_HOUR: z.coerce.number().int().nonnegative().default(100),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

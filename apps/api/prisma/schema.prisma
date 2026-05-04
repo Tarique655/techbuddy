@@ -1,0 +1,195 @@
+// TechBuddy database schema — v1.
+//
+// What lives here (v1):
+//   User      — a senior, family member, or technician.
+//   Session   — one help conversation. Pinned to a user; carries the device
+//               they picked at intake; tracks status as it moves through
+//               AI → human → resolved/abandoned.
+//   Message   — every turn of a session conversation, persisted.
+//
+// What does NOT live here yet (intentionally — add when needed):
+//   IssueSummary — the structured triage JSON. Comes when we build the
+//                  /v1/sessions/:id/summarize endpoint.
+//   Image       — photo intake (Scenarios A/B in the project doc).
+//   FamilyLink  — link family members to a senior account.
+//   Subscription — Stripe-backed billing.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Used by `prisma migrate` to bypass connection poolers (PgBouncer / Neon).
+  // In dev, set DIRECT_URL to the same value as DATABASE_URL — Neon's
+  // single connection string is fine. In production, set DATABASE_URL to
+  // the *pooled* connection string and DIRECT_URL to the unpooled one.
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================================
+// USERS
+// =============================================================================
+
+enum UserRole {
+  SENIOR
+  FAMILY
+  TECHNICIAN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  role      UserRole @default(SENIOR)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  sessions Session[]
+  contexts UserContext[]
+
+  @@map("users")
+}
+
+/// Long-lived facts the senior has shared with Buddy: their devices,
+/// accounts they use, anything else worth remembering across sessions.
+/// Injected into Buddy's system prompt so it doesn't have to ask the
+/// same setup questions every time.
+enum UserContextKind {
+  DEVICE
+  ACCOUNT
+  OTHER
+}
+
+model UserContext {
+  id        String          @id @default(cuid())
+  userId    String          @map("user_id")
+  kind      UserContextKind
+  /// Short label, e.g. "Laptop", "Email", "Streaming". Renders as the
+  /// row title in the About Me screen.
+  label     String
+  /// Free-form details, e.g. "Windows 11 Dell laptop" or "Gmail (work)".
+  details   String          @db.Text
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
+  @@map("user_contexts")
+}
+
+// =============================================================================
+// SESSIONS
+// =============================================================================
+
+/// Tracks a session's lifecycle so we can route, escalate, and bill.
+enum SessionStatus {
+  /// Senior is actively chatting with Buddy.
+  ACTIVE
+
+  /// Buddy resolved it via guided self-fix.
+  RESOLVED_AI
+
+  /// Routed to a human technician (live remote or callback).
+  ESCALATED
+
+  /// Senior closed the app or hasn't replied in a long time.
+  ABANDONED
+}
+
+/// Device the senior chose at intake. Mirrors the `DeviceKey` wire type
+/// shared with the mobile app.
+enum Device {
+  COMPUTER
+  PHONE
+  TABLET
+  TV
+  PRINTER
+  WIFI
+  OTHER
+}
+
+model Session {
+  id        String        @id @default(cuid())
+  userId    String        @map("user_id")
+  device    Device?
+  status    SessionStatus @default(ACTIVE)
+  startedAt DateTime      @default(now()) @map("started_at")
+  endedAt   DateTime?     @map("ended_at")
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+  summary  IssueSummary?
+
+  @@index([userId, startedAt])
+  @@map("sessions")
+}
+
+// =============================================================================
+// ISSUE SUMMARY
+// =============================================================================
+
+/// How fast does this need attention?
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Where the triage layer thinks this session should go.
+enum RecommendedRoute {
+  /// Buddy can guide the senior through the fix.
+  AI
+  /// Buddy starts; bring a human in if Buddy gets stuck.
+  AI_WITH_HUMAN_FALLBACK
+  /// Hand straight to a human technician.
+  HUMAN
+}
+
+/// Structured triage output Claude produces from the conversation history.
+/// Refreshed as the conversation evolves; one row per session (1:1 relation).
+model IssueSummary {
+  id              String           @id @default(cuid())
+  sessionId       String           @unique @map("session_id")
+  problem         String           @db.Text
+  goal            String           @db.Text
+  tags            String[]
+  /// 0–100. 0–40 simple AI fix; 40–70 moderate; 70–100 human territory.
+  complexity      Int
+  urgency         Urgency
+  recommendRoute  RecommendedRoute @map("recommend_route")
+  imageAttached   Boolean          @default(false) @map("image_attached")
+  /// Number of messages in the session at the time this summary was generated.
+  /// Used to decide when to refresh — don't burn tokens on every turn.
+  messageCount    Int              @map("message_count")
+  generatedAt     DateTime         @default(now()) @map("generated_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("issue_summaries")
+}
+
+// =============================================================================
+// MESSAGES
+// =============================================================================
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  sessionId String      @map("session_id")
+  role      MessageRole
+  content   String      @db.Text
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("messages")
+}

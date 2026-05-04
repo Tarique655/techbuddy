@@ -1,0 +1,11 @@
+{
+  "name": "@techbuddy/web",
+  "version": "0.0.1",
+  "private": true,
+  "description": "TechBuddy family portal — Next.js. Scaffold pending.",
+  "scripts": {
+    "dev": "echo \"Web app not yet scaffolded. From this folder run: pnpm create next-app@latest . --typescript --tailwind --app --eslint --src-dir --import-alias '@/*'\" && exit 1",
+    "lint": "echo skipped",
+    "typecheck": "echo skipped"
+  }
+}

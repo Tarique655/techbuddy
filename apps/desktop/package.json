@@ -1,0 +1,11 @@
+{
+  "name": "@techbuddy/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "description": "TechBuddy desktop companion — Electron app for remote desktop sessions. Scaffold pending.",
+  "scripts": {
+    "dev": "echo \"Desktop app not yet scaffolded. From this folder run: pnpm create @quick-start/electron . --template react-ts\" && exit 1",
+    "lint": "echo skipped",
+    "typecheck": "echo skipped"
+  }
+}

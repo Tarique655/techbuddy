@@ -24,4 +24,15 @@ if (dsn && dsn.length > 0) {
     // we want to correlate later.
     sendDefaultPii: false,
   });
+  // Print to stdout so Render logs confirm Sentry actually initialized.
+  // We only print the trailing project-id chunk so we don't leak the
+  // public key portion (DSNs are technically not secrets but no reason
+  // to splash them in logs).
+  // eslint-disable-next-line no-console
+  console.log(
+    `[sentry] initialized — env=${process.env.NODE_ENV ?? "development"}, dsn ends in ...${dsn.slice(-16)}`
+  );
+} else {
+  // eslint-disable-next-line no-console
+  console.log("[sentry] SENTRY_DSN not set — skipping init (events will not be sent)");
 }

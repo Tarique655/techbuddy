@@ -7,6 +7,15 @@
  * silently no-ops; nothing else in the app cares.
  */
 
+// Anthropic SDK requires its Node shims to be registered before *anything*
+// else from @anthropic-ai/sdk loads. Normally the SDK's main entry registers
+// them automatically via side-effect — but Sentry's `--import` runs early
+// auto-instrumentation that hooks module loading and can pull SDK internals
+// (core.mjs) out of order, triggering "you must import shims/node" errors.
+//
+// Importing shims here, before Sentry, guarantees they're registered first.
+import "@anthropic-ai/sdk/shims/node";
+
 import "dotenv/config";
 import * as Sentry from "@sentry/node";
 

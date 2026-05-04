@@ -1,4 +1,5 @@
 import {
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -133,10 +134,36 @@ export default function SettingsScreen() {
             }}
           />
         </Section>
+
+        {/* Legal ------------------------------------------------------ */}
+        <Section title={t("settings_section_legal")}>
+          <LegalLink
+            label={t("settings_privacy_policy")}
+            onPress={() => {
+              haptics.selection();
+              Linking.openURL(PRIVACY_URL).catch(() => {});
+            }}
+          />
+          <View style={styles.divider} />
+          <LegalLink
+            label={t("settings_terms_of_service")}
+            onPress={() => {
+              haptics.selection();
+              Linking.openURL(TERMS_URL).catch(() => {});
+            }}
+          />
+        </Section>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+// ============================================================================
+// Public URLs hosted on GitHub Pages (docs/ folder of the repo)
+// ============================================================================
+
+const PRIVACY_URL = "https://tarique655.github.io/techbuddy/privacy";
+const TERMS_URL = "https://tarique655.github.io/techbuddy/terms";
 
 // ============================================================================
 // Building blocks
@@ -192,6 +219,30 @@ function Segmented<V extends string>({
         );
       })}
     </View>
+  );
+}
+
+function LegalLink({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  const { t } = useT();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="link"
+      accessibilityLabel={`${label}. ${t("settings_legal_external_a11y")}.`}
+      style={({ pressed }) => [
+        styles.legalRow,
+        pressed && styles.legalRowPressed,
+      ]}
+    >
+      <Text style={styles.legalLabel}>{label}</Text>
+      <Ionicons name="open-outline" size={18} color="#5A6173" />
+    </Pressable>
   );
 }
 
@@ -369,6 +420,23 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#E6E8EF",
     marginVertical: 12,
+  },
+
+  // Legal links
+  legalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  legalRowPressed: {
+    opacity: 0.65,
+  },
+  legalLabel: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: "500",
+    color: "#1A1F2C",
   },
 
   // About me link row

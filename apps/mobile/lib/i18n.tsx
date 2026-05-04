@@ -125,6 +125,10 @@ const STRINGS = {
       "Buddy will speak its replies out loud in your language.",
     settings_haptics: "Vibration on tap",
     settings_haptics_desc: "Gentle buzz when you tap a button.",
+    settings_section_legal: "Legal",
+    settings_privacy_policy: "Privacy Policy",
+    settings_terms_of_service: "Terms of Service",
+    settings_legal_external_a11y: "Opens in your phone's browser",
 
     // History --------------------------------------------------------------
     history_title: "All my help",
@@ -367,6 +371,11 @@ const STRINGS = {
     settings_haptics: "Vibration au toucher",
     settings_haptics_desc:
       "Léger bourdonnement lorsque vous touchez un bouton.",
+    settings_section_legal: "Mentions légales",
+    settings_privacy_policy: "Politique de confidentialité",
+    settings_terms_of_service: "Conditions d'utilisation",
+    settings_legal_external_a11y:
+      "S'ouvre dans le navigateur de votre téléphone",
 
     history_title: "Tout mon historique",
     history_empty:

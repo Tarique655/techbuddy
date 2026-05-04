@@ -1,0 +1,7 @@
+# GitHub Pages / Jekyll config for the docs site.
+# Renders docs/*.md as readable HTML at https://<user>.github.io/techbuddy/
+
+title: TechBuddy
+description: A friendly tech-support app for seniors.
+theme: jekyll-theme-cayman
+permalink: /:basename

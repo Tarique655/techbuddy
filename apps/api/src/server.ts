@@ -1,8 +1,13 @@
-// Sentry instrumentation MUST be the first import — it patches Node's
-// HTTP layer for auto-instrumentation, which only works if it loads
-// before any framework code does.
-import "./instrument.js";
-
+// NOTE: Sentry initializes via Node's --import flag in package.json's
+// dev/start scripts (`node --import ./dist/instrument.js dist/server.js`).
+// Doing it that way guarantees Sentry.init runs *before* the ESM module
+// graph resolves, which is required for Sentry's auto-instrumentation
+// of Fastify/HTTP to actually monkey-patch them.
+//
+// Importing instrument.js here at the top of server.ts is NOT enough:
+// ESM hoists imports, so by the time the side-effect ran, Fastify had
+// already loaded — and Sentry's patches missed their window. Hence the
+// `[Sentry] fastify is not instrumented` warning we used to get.
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import * as Sentry from "@sentry/node";

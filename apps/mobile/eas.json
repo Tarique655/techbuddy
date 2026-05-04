@@ -7,18 +7,21 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.11.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com"
       }
     },
     "preview": {
       "distribution": "internal",
+      "node": "22.11.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com"
       }
     },
     "production": {
       "autoIncrement": true,
+      "node": "22.11.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com"
       }

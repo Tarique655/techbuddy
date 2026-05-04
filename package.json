@@ -3,10 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "description": "TechBuddy — AI-powered tech support for seniors. Monorepo containing the senior mobile app, desktop companion, family web portal, and backend API.",
-  "packageManager": "pnpm@9.12.0",
+  "packageManager": "pnpm@10.33.2",
   "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=22.0.0 <25",
+    "pnpm": ">=10.0.0"
   },
   "scripts": {
     "dev:mobile": "pnpm --filter @techbuddy/mobile dev",

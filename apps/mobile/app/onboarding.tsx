@@ -53,8 +53,14 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        // iOS: padding adds bottom inset equal to keyboard height.
+        // Android: height resizes the avoiding view itself; combined with
+        // `softwareKeyboardLayoutMode: "resize"` in app.json, this keeps
+        // focused inputs above the keyboard. Without behavior set on
+        // Android, the keyboard covers the input — which is what we hit.
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
+        keyboardVerticalOffset={Platform.OS === "android" ? 24 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}

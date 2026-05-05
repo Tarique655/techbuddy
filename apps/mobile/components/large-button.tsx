@@ -17,11 +17,19 @@ type Props = {
  * Senior-friendly button.
  *
  * Design rules from the project doc:
- *   - Hero variant is at least 96pt tall (the "Get Help Now" home button).
- *   - Primary/secondary are at least 64pt tall (well above the 48pt minimum).
- *   - Label font is 22–28pt — easily readable without reading glasses.
+ *   - Hero variant is a 260pt circle (the "Get Help Now" home button) —
+ *     unmistakable target, wide enough for clumsy taps, centered on the
+ *     home screen.
+ *   - Primary/secondary are at least 64pt tall rectangles (well above the
+ *     48pt minimum).
+ *   - Label font is 22–32pt — easily readable without reading glasses.
  *   - Press triggers a soft haptic so the senior knows the tap registered.
  *   - High-contrast colors; secondary still meets WCAG AA against white.
+ *
+ * Note on `helper`: for hero, the helper text does NOT render inside the
+ * circle (it would either overflow or shrink the label). The home screen
+ * renders the helper as a caption underneath the circle. For
+ * primary/secondary, helper renders inside as a second line.
  */
 export function LargeButton({
   label,
@@ -60,7 +68,9 @@ export function LargeButton({
         >
           {label}
         </Text>
-        {helper ? (
+        {/* Helper renders inside primary/secondary buttons. For hero, the
+            parent screen renders the helper as a caption below the circle. */}
+        {!isHero && helper ? (
           <Text
             style={[styles.helper, isSecondary && styles.secondaryHelper]}
           >
@@ -72,6 +82,8 @@ export function LargeButton({
   );
 }
 
+const HERO_DIAMETER = 260;
+
 const styles = StyleSheet.create({
   base: {
     minHeight: 64,
@@ -82,9 +94,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   hero: {
-    minHeight: 96,
-    paddingVertical: 24,
-    borderRadius: 20,
+    width: HERO_DIAMETER,
+    height: HERO_DIAMETER,
+    minHeight: HERO_DIAMETER,
+    borderRadius: HERO_DIAMETER / 2,
+    paddingVertical: 0,
   },
   primary: {
     backgroundColor: "#2A6CF6",

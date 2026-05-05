@@ -73,10 +73,12 @@ export default function HomeScreen() {
           <LargeButton
             variant="hero"
             label={t("get_help_now")}
-            helper={t("get_help_now_helper")}
             accessibilityLabel={t("get_help_now_a11y")}
             onPress={() => router.push("/devices")}
           />
+          {/* Helper text renders BELOW the circular hero button — see
+              LargeButton's note about why hero ignores its `helper` prop. */}
+          <Text style={styles.heroHelper}>{t("get_help_now_helper")}</Text>
         </View>
 
         {/* Spacer pushes the history button to the bottom of the viewport. */}
@@ -152,7 +154,16 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   heroBlock: {
+    alignItems: "center",
     marginBottom: 24,
+  },
+  heroHelper: {
+    fontSize: 18,
+    color: "#5A6173",
+    textAlign: "center",
+    marginTop: 16,
+    paddingHorizontal: 24,
+    lineHeight: 24,
   },
   flexSpacer: {
     flex: 1,

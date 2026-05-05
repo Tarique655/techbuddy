@@ -21,11 +21,14 @@ type Props = {
 };
 
 /**
- * Family-portal URL the senior shares with the family member. Hardcoded for
- * v1 — once the portal is on Vercel, swap this for an EXPO_PUBLIC_FAMILY_URL
- * env var so dev and prod can point at different hosts.
+ * Family-portal URL the senior shares with the family member.
+ *
+ * Read from the `EXPO_PUBLIC_FAMILY_URL` env var when set so dev and prod
+ * builds can point at different hosts; falls back to the live Vercel URL
+ * for builds that didn't set it (which is fine — it IS the production URL).
  */
-const FAMILY_PORTAL_URL = "https://techbuddy-family.vercel.app";
+const FAMILY_PORTAL_URL =
+  process.env.EXPO_PUBLIC_FAMILY_URL ?? "https://techbuddy-web.vercel.app";
 
 /**
  * Senior taps "Invite a family member" in Settings → this modal pops up,

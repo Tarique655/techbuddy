@@ -24,6 +24,13 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "@sentry/cli",
+      "@sentry/cli-linux-x64",
+      "@sentry/cli-linux-arm64",
+      "@sentry/cli-linux-arm",
+      "@sentry/cli-linux-i686",
+      "@sentry/cli-darwin",
+      "@sentry/cli-win32-x64",
+      "@sentry/cli-win32-i686",
       "@prisma/client",
       "@prisma/engines",
       "prisma",

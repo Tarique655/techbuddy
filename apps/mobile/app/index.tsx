@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -10,6 +11,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { LargeButton } from "@/components/large-button";
+import { BugReportModal } from "@/components/bug-report-modal";
 import { useAuth } from "@/lib/auth";
 import { useT, type StringKey } from "@/lib/i18n";
 import { useHaptics } from "@/lib/haptics";
@@ -29,6 +31,7 @@ export default function HomeScreen() {
   // AuthGate guarantees a user is present on this screen, but TypeScript
   // doesn't know that — fall back gracefully if it's somehow not.
   const seniorName = user?.name ?? "";
+  const [bugReportOpen, setBugReportOpen] = useState(false);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -85,6 +88,27 @@ export default function HomeScreen() {
         <View style={styles.flexSpacer} />
 
         <View style={styles.footer}>
+          {/*
+            Small red underlined "Report a bug" link sits just above the
+            history button. Intentionally low-visibility — we want it
+            available without competing with the senior's primary actions.
+          */}
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              setBugReportOpen(true);
+            }}
+            accessibilityRole="link"
+            accessibilityLabel={t("bug_report_link_a11y")}
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.bugReportLinkRow,
+              pressed && styles.bugReportLinkRowPressed,
+            ]}
+          >
+            <Text style={styles.bugReportLinkText}>{t("bug_report_link")}</Text>
+          </Pressable>
+
           <LargeButton
             variant="secondary"
             label={t("see_all_history")}
@@ -92,6 +116,12 @@ export default function HomeScreen() {
           />
         </View>
       </ScrollView>
+
+      <BugReportModal
+        visible={bugReportOpen}
+        onClose={() => setBugReportOpen(false)}
+        screen="home"
+      />
     </SafeAreaView>
   );
 }
@@ -171,5 +201,23 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingTop: 8,
+  },
+  // Small red underlined "Report a bug" link, positioned just above the
+  // history button. Center-aligned so it sits visually attached to the
+  // button below.
+  bugReportLinkRow: {
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 12,
+  },
+  bugReportLinkRowPressed: {
+    opacity: 0.55,
+  },
+  bugReportLinkText: {
+    fontSize: 15,
+    color: "#C8312D",
+    textDecorationLine: "underline",
+    fontWeight: "500",
   },
 });

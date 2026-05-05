@@ -37,6 +37,7 @@ import { useSettings } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
 import { useAuth } from "@/lib/auth";
 import { useVoiceInput } from "@/lib/use-voice-input";
+import { BugReportModal } from "@/components/bug-report-modal";
 
 type Bubble = ChatMessage & {
   id: string;
@@ -182,6 +183,10 @@ export default function ChatScreen() {
   // the small underlined link beneath Buddy's greeting bubble. The modal
   // shows device-aware instructions (iOS vs Android for the phone, etc.).
   const [screenshotHelpVisible, setScreenshotHelpVisible] = useState(false);
+
+  // Visibility for the "Report a bug" modal, opened from the small red
+  // underlined link above the composer.
+  const [bugReportVisible, setBugReportVisible] = useState(false);
 
   // Rehydrate when arriving with a sessionId (from a Home card tap).
   useEffect(() => {
@@ -656,6 +661,27 @@ export default function ChatScreen() {
         />
         )}
 
+        {/*
+          Small red underlined "Report a bug" link, positioned just above
+          the composer. Stays out of the senior's primary chat flow but is
+          available from any chat moment if Buddy or the app misbehaves.
+        */}
+        <Pressable
+          onPress={() => {
+            haptics.selection();
+            setBugReportVisible(true);
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t("bug_report_link_a11y")}
+          hitSlop={10}
+          style={({ pressed }) => [
+            styles.bugReportLinkRow,
+            pressed && styles.bugReportLinkRowPressed,
+          ]}
+        >
+          <Text style={styles.bugReportLinkText}>{t("bug_report_link")}</Text>
+        </Pressable>
+
         <View style={styles.composer}>
           {/*
             Camera + gallery stacked vertically as a slim column on the
@@ -819,6 +845,13 @@ export default function ChatScreen() {
           </View>
         </View>
       </Modal>
+
+      <BugReportModal
+        visible={bugReportVisible}
+        onClose={() => setBugReportVisible(false)}
+        screen="chat"
+        sessionId={sessionId}
+      />
     </SafeAreaView>
   );
 }
@@ -1249,5 +1282,23 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
+  },
+
+  // Small red underlined "Report a bug" link, positioned just above the
+  // composer. Center-aligned, low-visibility — stays out of the senior's
+  // primary chat flow but is always reachable.
+  bugReportLinkRow: {
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  bugReportLinkRowPressed: {
+    opacity: 0.55,
+  },
+  bugReportLinkText: {
+    fontSize: 14,
+    color: "#C8312D",
+    textDecorationLine: "underline",
+    fontWeight: "500",
   },
 });

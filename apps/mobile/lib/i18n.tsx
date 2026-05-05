@@ -291,6 +291,28 @@ const STRINGS = {
     alert_photo_send_title: "Couldn't send that photo",
     alert_photo_send_body:
       "Something went wrong preparing the image. Please try again.",
+
+    // Bug report (link + modal contents) ----------------------------------
+    bug_report_link: "Report a bug",
+    bug_report_link_a11y: "Report a bug to the people who built this app",
+    bug_report_modal_title: "Report a bug",
+    bug_report_modal_body:
+      "Tell me what went wrong. If you can, add a screenshot or photo so I can see it too.",
+    bug_report_description_placeholder:
+      "What happened? (e.g. \"The Send button didn't do anything when I tapped it.\")",
+    bug_report_take_screenshot: "Take a photo",
+    bug_report_pick_screenshot: "Pick a screenshot",
+    bug_report_remove_image: "Remove photo",
+    bug_report_remove_image_a11y: "Remove the attached photo",
+    bug_report_send: "Send report",
+    bug_report_cancel: "Cancel",
+    bug_report_sending: "Sending…",
+    bug_report_success_title: "Thanks for letting us know",
+    bug_report_success_body:
+      "Your report was sent. We'll look into it. You can keep using the app.",
+    bug_report_error_title: "Couldn't send that report",
+    bug_report_error_body:
+      "Please check your internet connection and try again.",
   },
 
   fr: {
@@ -546,6 +568,28 @@ const STRINGS = {
     alert_photo_send_title: "Impossible d'envoyer cette photo",
     alert_photo_send_body:
       "Une erreur est survenue lors de la préparation de l'image. Veuillez réessayer.",
+
+    bug_report_link: "Signaler un problème",
+    bug_report_link_a11y:
+      "Signaler un problème aux personnes qui ont créé cette application",
+    bug_report_modal_title: "Signaler un problème",
+    bug_report_modal_body:
+      "Dites-nous ce qui ne va pas. Si possible, ajoutez une capture d'écran ou une photo pour qu'on puisse voir.",
+    bug_report_description_placeholder:
+      "Que s'est-il passé ? (ex. « Le bouton Envoyer ne faisait rien quand je le touchais. »)",
+    bug_report_take_screenshot: "Prendre une photo",
+    bug_report_pick_screenshot: "Choisir une capture d'écran",
+    bug_report_remove_image: "Retirer la photo",
+    bug_report_remove_image_a11y: "Retirer la photo jointe",
+    bug_report_send: "Envoyer le signalement",
+    bug_report_cancel: "Annuler",
+    bug_report_sending: "Envoi en cours…",
+    bug_report_success_title: "Merci de nous l'avoir signalé",
+    bug_report_success_body:
+      "Votre signalement a été envoyé. Nous allons regarder ça. Vous pouvez continuer à utiliser l'application.",
+    bug_report_error_title: "Impossible d'envoyer le signalement",
+    bug_report_error_body:
+      "Veuillez vérifier votre connexion internet et réessayer.",
   },
 } as const;
 

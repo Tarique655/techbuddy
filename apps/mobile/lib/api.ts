@@ -269,4 +269,43 @@ export async function updateSessionStatus(
   }
 }
 
+// ===========================================================================
+// Bug reports
+// ===========================================================================
+
+export type BugReportScreen = "home" | "chat" | "other";
+
+export type BugReportInput = {
+  description: string;
+  /** Optional screenshot, same shape as the chat image input. */
+  image?: ImageInput;
+  screen: BugReportScreen;
+  /** Soft pointer to the chat session if reporting from /chat. */
+  sessionId?: string;
+  platform?: string;
+  appVersion?: string;
+  locale?: string;
+};
+
+/**
+ * Submit a bug report. Stored on the backend and forwarded to Sentry as
+ * a low-severity event so it shows up in the same dashboard as crashes.
+ */
+export async function submitBugReport(
+  input: BugReportInput
+): Promise<{ id: string }> {
+  const response = await fetch(`${API_URL}/v1/bug-reports`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Bug report failed (${response.status}): ${body || "no body"}`
+    );
+  }
+  return (await response.json()) as { id: string };
+}
+
 export { API_URL };

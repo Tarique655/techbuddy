@@ -14,6 +14,7 @@ import * as Sentry from "@sentry/node";
 
 import { env } from "./lib/env.js";
 import { registerAuth } from "./lib/auth.js";
+import { bugReportRoutes } from "./routes/bug-reports.js";
 import { chatRoutes } from "./routes/chat.js";
 import { debugRoutes } from "./routes/debug.js";
 import { sessionsRoutes } from "./routes/sessions.js";
@@ -66,6 +67,7 @@ await fastify.register(userRoutes);
 await fastify.register(chatRoutes);
 await fastify.register(sessionsRoutes);
 await fastify.register(userContextRoutes);
+await fastify.register(bugReportRoutes);
 await fastify.register(debugRoutes);
 
 try {

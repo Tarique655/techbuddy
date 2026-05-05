@@ -45,8 +45,9 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  sessions Session[]
-  contexts UserContext[]
+  sessions   Session[]
+  contexts   UserContext[]
+  bugReports BugReport[]
 
   @@map("users")
 }
@@ -192,4 +193,49 @@ model Message {
 
   @@index([sessionId, createdAt])
   @@map("messages")
+}
+
+// =============================================================================
+// BUG REPORTS
+// =============================================================================
+
+/// Where in the app the senior was when they tapped "Report a bug".
+/// Stored on each row so we can prioritize whatever screen is generating
+/// the most reports.
+enum BugReportScreen {
+  HOME
+  CHAT
+  OTHER
+}
+
+/// User-submitted bug reports from the in-app "Report a bug" link.
+/// Optional screenshot is stored inline as base64 — fine for v1 volume;
+/// migrate to object storage if it grows. Sessions are recorded as a
+/// soft reference (NOT a FK) so deleting a session doesn't drop the
+/// bug context.
+model BugReport {
+  id           String          @id @default(cuid())
+  userId       String          @map("user_id")
+  /// Soft pointer to the chat session the senior was in when reporting.
+  /// Not a FK so a deleted/abandoned session doesn't cascade away the
+  /// bug record. Null when reported from a non-chat screen.
+  sessionId    String?         @map("session_id")
+  screen       BugReportScreen
+  description  String          @db.Text
+  /// Inline base64 of an attached screenshot (no `data:` prefix).
+  /// Null when the senior submitted description-only.
+  imageBase64  String?         @db.Text @map("image_base64")
+  imageMediaType String?       @map("image_media_type")
+  /// Free-form context fields the client can populate to help us
+  /// reproduce. All optional so the schema doesn't churn every release.
+  platform     String?
+  appVersion   String?         @map("app_version")
+  locale       String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([screen, createdAt])
+  @@map("bug_reports")
 }

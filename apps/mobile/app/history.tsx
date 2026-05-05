@@ -61,7 +61,12 @@ function formatTimeAgo(
   const days = Math.floor(hours / 24);
   if (days === 1) return t("time_yesterday");
   if (days < 7) return t("time_days_ago", { n: days });
-  return then.toLocaleDateString(language === "fr" ? "fr-CA" : undefined, {
+  // Pick a locale for the date formatter that matches the senior's chosen
+  // language. `undefined` falls back to the system locale, which is right
+  // for English (we don't want to override en-GB → en-US, etc.).
+  const dateLocale =
+    language === "fr" ? "fr-CA" : language === "es" ? "es-ES" : undefined;
+  return then.toLocaleDateString(dateLocale, {
     month: "short",
     day: "numeric",
   });

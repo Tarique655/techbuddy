@@ -51,7 +51,7 @@ const ChatRequestSchema = z.object({
    */
   image: ImageInputSchema.optional(),
   /** Language Buddy should reply in. Defaults to English. */
-  language: z.enum(["en", "fr"]).optional(),
+  language: z.enum(["en", "fr", "es"]).optional(),
 });
 
 type DeviceKey = z.infer<typeof DeviceKeySchema>;
@@ -177,6 +177,9 @@ export async function chatRoutes(fastify: FastifyInstance) {
       factsBlock,
       language === "fr"
         ? "IMPORTANT: Always respond in French. Use the formal \"vous\" form when addressing the senior — it's the respectful, age-appropriate register. Keep all icon markers (e.g. [icon:refresh]) in their English form; only the surrounding prose is translated."
+        : null,
+      language === "es"
+        ? "IMPORTANT: Always respond in Spanish (Spain — castellano). Use the formal \"usted\" form when addressing the senior — it's the respectful, age-appropriate register. Use Spain Spanish vocabulary (e.g. \"ordenador\" not \"computadora\", \"móvil\" or \"teléfono\" not \"celular\"). Keep all icon markers (e.g. [icon:refresh]) in their English form; only the surrounding prose is translated."
         : null,
     ].filter(Boolean);
 

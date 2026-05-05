@@ -9,7 +9,7 @@ import {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export type Language = "en" | "fr";
+export type Language = "en" | "fr" | "es";
 
 const STORAGE_KEY = "techbuddy.language";
 
@@ -113,6 +113,7 @@ const STRINGS = {
     settings_section_language: "Language",
     settings_lang_english: "English",
     settings_lang_french: "Français",
+    settings_lang_spanish: "Español",
     settings_section_text: "Text size",
     settings_text_normal: "Normal",
     settings_text_large: "Large",
@@ -258,6 +259,7 @@ const STRINGS = {
     settings_section_language: "Language",
     settings_lang_english: "English",
     settings_lang_french: "Français",
+    settings_lang_spanish: "Español",
     settings_section_text: "Text size",
     settings_text_normal: "Normal",
     settings_text_large: "Large",
@@ -400,6 +402,7 @@ const STRINGS = {
     settings_section_language: "Langue",
     settings_lang_english: "English",
     settings_lang_french: "Français",
+    settings_lang_spanish: "Español",
     settings_section_text: "Taille du texte",
     settings_text_normal: "Normal",
     settings_text_large: "Grand",
@@ -536,6 +539,7 @@ const STRINGS = {
     settings_section_language: "Langue",
     settings_lang_english: "English",
     settings_lang_french: "Français",
+    settings_lang_spanish: "Español",
     settings_section_text: "Taille du texte",
     settings_text_normal: "Normal",
     settings_text_large: "Grand",
@@ -591,10 +595,279 @@ const STRINGS = {
     bug_report_error_body:
       "Veuillez vérifier votre connexion internet et réessayer.",
   },
+
+  // ==========================================================================
+  // Spanish (Spain) — es-ES
+  // ==========================================================================
+  // First-pass translations using the formal "usted" register, which is the
+  // appropriate respectful form for addressing seniors in Spain. NEEDS NATIVE
+  // SPEAKER REVIEW before any Spanish-language launch — auto-generated copy
+  // can miss tone, regional idioms, and the warm-but-clear voice we want
+  // Buddy to have.
+  // ==========================================================================
+  es: {
+    home_subtitle: "¿En qué puedo ayudarle hoy?",
+    get_help_now: "Pedir ayuda",
+    get_help_now_helper: "Toque aquí para empezar",
+    get_help_now_a11y:
+      "Pedir ayuda ahora. Toque para elegir un dispositivo y empezar una sesión de ayuda.",
+    recent_help: "Ayuda reciente",
+    empty_recent: "Sus sesiones de ayuda recientes aparecerán aquí.",
+    history_load_error: "No se pudo cargar su historial de ayuda.",
+    see_all_history: "Ver todo mi historial",
+    open_session_a11y: "Abrir la sesión de {device} de {when}",
+
+    morning: "Buenos días",
+    afternoon: "Buenas tardes",
+    evening: "Buenas noches",
+
+    time_now: "Hace un momento",
+    time_minutes_ago: "Hace {n} minutos",
+    time_hour_ago: "Hace 1 hora",
+    time_hours_ago: "Hace {n} horas",
+    time_yesterday: "Ayer",
+    time_days_ago: "Hace {n} días",
+
+    status_active: "Abierta",
+    status_resolved: "Resuelta",
+    status_escalated: "Con una persona",
+
+    devices_header: "Pedir ayuda",
+    devices_q: "¿Qué necesita ayuda?",
+    devices_subtitle: "Elija el dispositivo que le da problemas.",
+
+    device_computer: "Ordenador",
+    device_computer_caption: "Windows o Mac",
+    device_phone: "Este teléfono",
+    device_phone_caption: "El que tiene en la mano",
+    device_tablet: "Tableta",
+    device_tablet_caption: "iPad o Android",
+    device_tv: "Televisor inteligente",
+    device_tv_caption: "O reproductor",
+    device_printer: "Impresora",
+    device_printer_caption: "Con cable o inalámbrica",
+    device_wifi: "Wi-Fi",
+    device_wifi_caption: "Internet en casa",
+    device_other: "Otra cosa",
+    device_other_caption: "O no estoy seguro",
+
+    card_computer: "Ordenador",
+    card_phone: "Teléfono",
+    card_tablet: "Tableta",
+    card_tv: "Televisor",
+    card_printer: "Impresora",
+    card_wifi: "Wi-Fi",
+    card_help_session: "Sesión de ayuda",
+
+    back: "Atrás",
+    back_a11y: "Volver al inicio",
+    done: "Listo",
+    done_a11y: "He terminado con esta sesión de ayuda",
+    chat_title: "Buddy",
+    chat_done_title: "¿Todo arreglado?",
+    chat_done_body: "¿Le ha ayudado Buddy a solucionarlo?",
+    chat_done_no: "Todavía no, sigamos",
+    chat_done_yes: "Sí, todo arreglado",
+    type_placeholder: "Escriba su mensaje…",
+    send: "Enviar",
+    send_a11y: "Enviar mensaje",
+    msg_input_a11y: "Mensaje a Buddy",
+    camera_a11y: "Hacer una foto para enseñársela a Buddy",
+    gallery_a11y: "Elegir una captura de pantalla o foto para enviar a Buddy",
+    mic_a11y: "Toque para hablar con Buddy en lugar de escribir",
+    mic_listening_a11y: "Toque para dejar de escuchar",
+    voice_listening_hint:
+      "Escuchando… hable con naturalidad y haga una pausa cuando termine.",
+    alert_mic_permission_title: "Hace falta permiso del micrófono",
+    alert_mic_permission_body:
+      "TechBuddy necesita acceso al micrófono para oír su voz. Por favor, permítalo en los Ajustes del teléfono.",
+    alert_voice_failed_title: "No le pude oír",
+    alert_voice_failed_body:
+      "Algo salió mal con el micrófono. Por favor, inténtelo de nuevo.",
+
+    settings: "Ajustes",
+    settings_a11y: "Abrir los ajustes",
+    settings_section_language: "Idioma",
+    settings_lang_english: "English",
+    settings_lang_french: "Français",
+    settings_lang_spanish: "Español",
+    settings_section_text: "Tamaño del texto",
+    settings_text_normal: "Normal",
+    settings_text_large: "Grande",
+    settings_text_xlarge: "Muy grande",
+    settings_text_preview:
+      "Así se verá el texto en sus conversaciones con Buddy.",
+    settings_section_audio: "Sonido y voz",
+    settings_read_aloud: "Leer en voz alta",
+    settings_read_aloud_desc:
+      "Buddy leerá sus respuestas en voz alta en su idioma.",
+    settings_haptics: "Vibración al tocar",
+    settings_haptics_desc:
+      "Una vibración suave cuando toca un botón, para confirmar el toque.",
+    settings_section_legal: "Aviso legal",
+    settings_privacy_policy: "Política de privacidad",
+    settings_terms_of_service: "Términos del servicio",
+    settings_legal_external_a11y: "Se abre en el navegador del teléfono",
+
+    history_title: "Todo mi historial",
+    history_empty:
+      "Aún no tiene sesiones de ayuda. Toque «Pedir ayuda» en la pantalla de inicio para empezar una.",
+
+    onboarding_welcome_title: "¡Hola! Soy Buddy.",
+    onboarding_welcome_body:
+      "Le ayudo con su ordenador, su teléfono, el Wi-Fi y otros problemas técnicos. Le guío paso a paso, y puedo avisar a una persona de verdad cuando hace falta.",
+    onboarding_welcome_cta: "Empezar",
+    onboarding_name_title: "¿Cómo debo llamarle?",
+    onboarding_name_body:
+      "Lo usaré para saludarle, y para ayudar si una persona tiene que intervenir más adelante.",
+    onboarding_name_placeholder: "Su nombre",
+    onboarding_name_cta: "Continuar",
+    onboarding_creating: "Preparando todo…",
+    onboarding_error_title: "Algo salió mal",
+    onboarding_error_body:
+      "Compruebe que está conectado a Internet y vuelva a intentarlo.",
+    onboarding_retry: "Reintentar",
+    onboarding_splash: "TechBuddy",
+
+    about_me_title: "Sobre mí",
+    about_me_intro:
+      "Añada los dispositivos que usa y las cuentas que tiene. Buddy las recordará para no tener que preguntar cada vez.",
+    about_me_section_devices: "Mis dispositivos",
+    about_me_section_accounts: "Mis cuentas",
+    about_me_section_other: "Otro",
+    about_me_empty_devices:
+      "Todavía no ha añadido ningún dispositivo. Toque el + de abajo para añadir uno.",
+    about_me_empty_accounts:
+      "Todavía no ha añadido ninguna cuenta. Toque el + de abajo para añadir una.",
+    about_me_add_device: "Añadir un dispositivo",
+    about_me_add_account: "Añadir una cuenta",
+    about_me_add_other: "Añadir una nota",
+    about_me_label_placeholder_device:
+      "¿Qué tipo? (ej. Portátil, iPhone, iPad)",
+    about_me_label_placeholder_account: "¿Cuál? (ej. Correo, Netflix)",
+    about_me_label_placeholder_other: "¿De qué se trata?",
+    about_me_details_placeholder_device:
+      "¿Algún detalle? (ej. Windows 11, marca Dell)",
+    about_me_details_placeholder_account:
+      "¿Algún detalle? (ej. Gmail, el que más uso)",
+    about_me_details_placeholder_other: "Más detalles",
+    about_me_save: "Guardar",
+    about_me_cancel: "Cancelar",
+    about_me_remove: "Quitar",
+    about_me_remove_confirm_title: "¿Quitar esto?",
+    about_me_remove_confirm_body:
+      "Buddy ya no lo recordará. Siempre podrá añadirlo de nuevo más adelante.",
+    about_me_link: "Sobre mí",
+    about_me_link_desc:
+      "Dispositivos y cuentas que Buddy recordará.",
+    buddy_thinking: "Buddy está pensando...",
+    chips_hint: "O elija uno de los problemas más habituales:",
+    chip_computer_signin: "No puedo entrar",
+    chip_computer_suspicious: "Ventana sospechosa",
+    chip_computer_slow: "Va muy lento",
+
+    chip_phone_app_crash: "La aplicación se cierra",
+    chip_phone_video_call: "La videollamada no funciona",
+    chip_phone_password: "Contraseña olvidada",
+
+    chip_tablet_app_crash: "La aplicación se cierra",
+    chip_tablet_password: "Contraseña olvidada",
+    chip_tablet_email: "Problema con el correo",
+
+    chip_tv_streaming: "No puedo ver mis programas",
+    chip_tv_remote: "El mando no funciona",
+    chip_tv_signin: "Problema para iniciar sesión",
+
+    chip_printer_no_print: "No imprime",
+    chip_printer_offline: "Impresora sin conexión",
+    chip_printer_paper_ink: "Papel o tinta",
+
+    chip_wifi_connect: "No me conecto",
+    chip_wifi_slow: "Internet va lento",
+    chip_wifi_drop: "El Wi-Fi se corta",
+
+    chip_other_password: "Contraseña olvidada",
+    chip_other_popup: "Ventana extraña",
+    chip_other_email: "Problema con el correo",
+    chip_other_printer: "La impresora no funciona",
+    opening_chat: "Abriendo su conversación…",
+
+    screenshot_help_link: "Cómo hacer una captura de pantalla",
+    screenshot_help_link_a11y:
+      "Enséñeme cómo hacer una captura de pantalla",
+    screenshot_help_modal_title: "Cómo hacer una captura de pantalla",
+    screenshot_help_modal_close: "Entendido",
+    screenshot_help_phone_ios:
+      "En este iPhone:\n\n1. Pulse el botón lateral y el botón Subir volumen a la vez.\n\n2. Suéltelos enseguida — verá una pequeña imagen en la esquina.\n\nLuego vuelva aquí y toque el icono de la foto en la parte de abajo a la izquierda para enviármela.",
+    screenshot_help_phone_android:
+      "En este teléfono:\n\n1. Pulse el botón de Encendido y el botón Bajar volumen a la vez.\n\n2. Suéltelos enseguida — verá una vista previa pequeña.\n\nLuego vuelva aquí y toque el icono de la foto en la parte de abajo a la izquierda para enviármela.",
+    screenshot_help_tablet:
+      "En la mayoría de las tabletas:\n\nPulse el botón superior y el botón Subir volumen a la vez, y suéltelos enseguida.\n\nEn un iPad antiguo con botón de inicio redondo: pulse el botón de Inicio y el botón superior a la vez.\n\nLa captura se guarda en sus Fotos.",
+    screenshot_help_computer:
+      "En un PC con Windows:\n\nPulse la tecla Windows, Mayúsculas y S a la vez, y arrastre un recuadro alrededor de lo que quiere capturar.\n\nEn un Mac:\n\nPulse Comando, Mayúsculas y 4 a la vez, y arrastre un recuadro.\n\nMándese la imagen por correo para abrirla en este teléfono y enviármela.",
+    screenshot_help_camera_only:
+      "Los televisores, impresoras y rúters Wi-Fi no pueden hacer capturas de pantalla — pero puede usar la cámara de este teléfono.\n\nToque el icono de la cámara en la parte de abajo a la izquierda y haga una foto clara de lo que ve.",
+
+    buddy_greet_generic:
+      "¡Hola, {name}! Soy Buddy. ¿En qué puedo ayudarle hoy? Si puede, una foto o captura de pantalla de lo que ve me ayuda a entenderlo rápido.",
+    buddy_greet_device:
+      "¡Hola, {name}! Soy Buddy. He oído que su {device} le está dando problemas — cuénteme qué pasa. Si puede, una foto o captura de pantalla de lo que ve me ayuda a entenderlo rápido.",
+
+    noun_computer: "ordenador",
+    noun_phone: "teléfono",
+    noun_tablet: "tableta",
+    noun_tv: "televisor",
+    noun_printer: "impresora",
+    noun_wifi: "Wi-Fi",
+
+    photo_default_caption: "Aquí tiene una foto de lo que veo.",
+
+    alert_buddy_trouble_title: "Buddy tiene un problema",
+    alert_buddy_trouble_body: "Por favor, inténtelo de nuevo en un momento.",
+    alert_ok: "De acuerdo",
+    alert_session_open_title: "No se pudo abrir esa sesión",
+    alert_session_open_body:
+      "Algo salió mal. Inténtelo de nuevo desde la pantalla de inicio.",
+    alert_camera_permission_title: "Hace falta permiso de la cámara",
+    alert_camera_permission_body:
+      "TechBuddy necesita acceso a la cámara para que pueda enseñarle a Buddy lo que tiene en la pantalla. Por favor, permítalo en los Ajustes del teléfono.",
+    alert_camera_open_title: "No se pudo abrir la cámara",
+    alert_camera_open_body: "Por favor, inténtelo de nuevo.",
+    alert_gallery_permission_title: "Hace falta permiso de las fotos",
+    alert_gallery_permission_body:
+      "TechBuddy necesita acceso a sus fotos para que pueda elegir una captura de pantalla. Por favor, permítalo en los Ajustes del teléfono.",
+    alert_gallery_open_title: "No se pudo abrir sus fotos",
+    alert_photo_send_title: "No se pudo enviar esa foto",
+    alert_photo_send_body:
+      "Algo salió mal al preparar la imagen. Por favor, inténtelo de nuevo.",
+
+    bug_report_link: "Informar de un problema",
+    bug_report_link_a11y:
+      "Informar de un problema a las personas que crearon esta aplicación",
+    bug_report_modal_title: "Informar de un problema",
+    bug_report_modal_body:
+      "Cuéntenos qué ha pasado. Si puede, añada una captura de pantalla o foto para que también podamos verlo.",
+    bug_report_description_placeholder:
+      "¿Qué ha pasado? (ej. «El botón Enviar no hacía nada cuando lo tocaba».)",
+    bug_report_take_screenshot: "Hacer una foto",
+    bug_report_pick_screenshot: "Elegir una captura de pantalla",
+    bug_report_remove_image: "Quitar la foto",
+    bug_report_remove_image_a11y: "Quitar la foto adjunta",
+    bug_report_send: "Enviar informe",
+    bug_report_cancel: "Cancelar",
+    bug_report_sending: "Enviando…",
+    bug_report_success_title: "Gracias por avisarnos",
+    bug_report_success_body:
+      "Su informe se ha enviado. Lo revisaremos. Puede seguir usando la aplicación.",
+    bug_report_error_title: "No se pudo enviar el informe",
+    bug_report_error_body:
+      "Por favor, compruebe su conexión a Internet y vuelva a intentarlo.",
+  },
 } as const;
 
-// Force both language objects to have the same keys at compile time.
-type _SameKeys = (typeof STRINGS)["en"] extends Record<
+// Force every language object to have the exact same key set at compile
+// time. Adding a new language? Add another _Check pair below.
+type _CheckEnFr = (typeof STRINGS)["en"] extends Record<
   keyof (typeof STRINGS)["fr"],
   string
 >
@@ -602,8 +875,18 @@ type _SameKeys = (typeof STRINGS)["en"] extends Record<
     ? true
     : never
   : never;
-const _check: _SameKeys = true;
-void _check;
+type _CheckEnEs = (typeof STRINGS)["en"] extends Record<
+  keyof (typeof STRINGS)["es"],
+  string
+>
+  ? (typeof STRINGS)["es"] extends Record<keyof (typeof STRINGS)["en"], string>
+    ? true
+    : never
+  : never;
+const _checkFr: _CheckEnFr = true;
+const _checkEs: _CheckEnEs = true;
+void _checkFr;
+void _checkEs;
 
 export type StringKey = keyof (typeof STRINGS)["en"];
 
@@ -636,7 +919,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((v) => {
-        if (v === "en" || v === "fr") setLanguageState(v);
+        if (v === "en" || v === "fr" || v === "es") setLanguageState(v);
       })
       .catch(() => {
         /* fall back to English */

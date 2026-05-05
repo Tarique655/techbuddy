@@ -59,6 +59,7 @@ export default function SettingsScreen() {
             options={[
               { value: "en", label: t("settings_lang_english") },
               { value: "fr", label: t("settings_lang_french") },
+              { value: "es", label: t("settings_lang_spanish") },
             ]}
             value={language}
             onChange={(v) => {

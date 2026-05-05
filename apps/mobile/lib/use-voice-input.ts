@@ -90,7 +90,15 @@ export function useVoiceInput(language: Language): UseVoiceInputResult {
     }
 
     ExpoSpeechRecognitionModule.start({
-      lang: language === "fr" ? "fr-CA" : "en-US",
+      // Match the OS speech recognizer to the senior's chosen language.
+      // fr → Canadian French, es → Spain Spanish (per product decision),
+      // everything else falls back to US English.
+      lang:
+        language === "fr"
+          ? "fr-CA"
+          : language === "es"
+            ? "es-ES"
+            : "en-US",
       interimResults: true,
       continuous: false,
       // Senior-friendly silence tolerances. The recognizer auto-stops

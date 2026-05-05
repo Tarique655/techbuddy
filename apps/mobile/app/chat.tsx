@@ -259,7 +259,17 @@ export default function ChatScreen() {
     if (!speakable) return;
     Speech.stop();
     Speech.speak(speakable, {
-      language: language === "fr" ? "fr-CA" : "en-US",
+      // Pick the OS TTS locale that matches the senior's chosen language.
+      // For French we use Canadian French (fr-CA) — closer to the accents
+      // most TechBuddy users will recognize. For Spanish we use Spain
+      // Spanish (es-ES) per product decision; if we ever ship Latin
+      // American Spanish, branch on a more specific setting.
+      language:
+        language === "fr"
+          ? "fr-CA"
+          : language === "es"
+            ? "es-ES"
+            : "en-US",
       rate: 0.9,
     });
   }, [messages, settings.readAloud, language]);

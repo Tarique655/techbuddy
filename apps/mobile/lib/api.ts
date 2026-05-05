@@ -129,7 +129,7 @@ export async function sendChatMessage(params: {
   device?: DeviceKey;
   sessionId?: string;
   image?: ImageInput;
-  language?: "en" | "fr";
+  language?: "en" | "fr" | "es";
 }): Promise<ChatResponse> {
   const response = await fetch(`${API_URL}/v1/chat`, {
     method: "POST",

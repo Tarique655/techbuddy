@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tariq.techbuddy"
+      "bundleIdentifier": "com.tariq.techbuddy",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "TechBuddy needs speech recognition so it can turn your spoken words into text for Buddy.",
+        "NSMicrophoneUsageDescription": "TechBuddy needs microphone access so you can speak to Buddy instead of typing."
+      }
     },
     "android": {
       "package": "com.tariq.techbuddy",
@@ -23,6 +27,7 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -76,6 +81,12 @@
       "eas": {
         "projectId": "658f1af3-5e35-430a-897c-c4f54de441b0"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/658f1af3-5e35-430a-897c-c4f54de441b0"
     }
   }
 }

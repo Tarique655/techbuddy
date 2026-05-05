@@ -6,8 +6,10 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -175,6 +177,11 @@ export default function ChatScreen() {
   // greeting bubble during load so we don't flash it before the real
   // history appears.
   const [isHydrating, setIsHydrating] = useState<boolean>(!!initialSessionId);
+
+  // Visibility for the "How to take a screenshot" help modal, opened from
+  // the small underlined link beneath Buddy's greeting bubble. The modal
+  // shows device-aware instructions (iOS vs Android for the phone, etc.).
+  const [screenshotHelpVisible, setScreenshotHelpVisible] = useState(false);
 
   // Rehydrate when arriving with a sessionId (from a Home card tap).
   useEffect(() => {
@@ -366,6 +373,45 @@ export default function ChatScreen() {
   function handleSend() {
     if (!input.trim() || isSending) return;
     sendTurn({ text: input });
+  }
+
+  /**
+   * Pick the right "how to take a screenshot" instructions based on the
+   * device the senior said they need help with. For phone we branch on
+   * Platform.OS so we describe the buttons of the device they're holding;
+   * for tv/printer/wifi we redirect them to the camera button instead
+   * (those devices can't actually take screenshots). For an unknown
+   * device we fall back to instructions for this phone.
+   */
+  function getScreenshotInstructions(): string {
+    switch (device) {
+      case "phone":
+        return Platform.OS === "ios"
+          ? t("screenshot_help_phone_ios")
+          : t("screenshot_help_phone_android");
+      case "tablet":
+        return t("screenshot_help_tablet");
+      case "computer":
+        return t("screenshot_help_computer");
+      case "tv":
+      case "printer":
+      case "wifi":
+        return t("screenshot_help_camera_only");
+      default:
+        return Platform.OS === "ios"
+          ? t("screenshot_help_phone_ios")
+          : t("screenshot_help_phone_android");
+    }
+  }
+
+  function openScreenshotHelp() {
+    haptics.selection();
+    setScreenshotHelpVisible(true);
+  }
+
+  function closeScreenshotHelp() {
+    haptics.selection();
+    setScreenshotHelpVisible(false);
   }
 
   /**
@@ -568,7 +614,25 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
-            <Bubble bubble={item} fontScale={settings.fontScale} />
+            <View>
+              <Bubble bubble={item} fontScale={settings.fontScale} />
+              {item.isGreeting ? (
+                <Pressable
+                  onPress={openScreenshotHelp}
+                  accessibilityRole="link"
+                  accessibilityLabel={t("screenshot_help_link_a11y")}
+                  hitSlop={10}
+                  style={({ pressed }) => [
+                    styles.screenshotHelpLink,
+                    pressed && styles.screenshotHelpLinkPressed,
+                  ]}
+                >
+                  <Text style={styles.screenshotHelpLinkText}>
+                    {t("screenshot_help_link")}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
           )}
           ListFooterComponent={
             isSending ? (
@@ -701,6 +765,60 @@ export default function ChatScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      {/*
+        Screenshot help modal — opened from the small underlined link below
+        Buddy's greeting. The body text is picked by getScreenshotInstructions
+        so the steps match the device the senior is asking about.
+      */}
+      <Modal
+        visible={screenshotHelpVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeScreenshotHelp}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text
+              style={[
+                styles.modalTitle,
+                { fontSize: 22 * settings.fontScale },
+              ]}
+            >
+              {t("screenshot_help_modal_title")}
+            </Text>
+            <ScrollView
+              style={styles.modalBodyScroll}
+              contentContainerStyle={styles.modalBodyContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text
+                style={[
+                  styles.modalBody,
+                  {
+                    fontSize: 18 * settings.fontScale,
+                    lineHeight: 26 * settings.fontScale,
+                  },
+                ]}
+              >
+                {getScreenshotInstructions()}
+              </Text>
+            </ScrollView>
+            <Pressable
+              onPress={closeScreenshotHelp}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.modalButton,
+                pressed && styles.modalButtonPressed,
+              ]}
+            >
+              <Text style={styles.modalButtonText}>
+                {t("screenshot_help_modal_close")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1057,5 +1175,79 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF3F2",
     borderWidth: 2,
     borderColor: "#C8312D",
+  },
+
+  // Small underlined link rendered just below Buddy's greeting bubble.
+  // Sits a little inset from the left edge so it visually attaches to
+  // the bubble above it without looking like a button.
+  screenshotHelpLink: {
+    paddingHorizontal: 18,
+    paddingVertical: 6,
+    marginTop: 2,
+    marginLeft: 4,
+    alignSelf: "flex-start",
+  },
+  screenshotHelpLinkPressed: {
+    opacity: 0.55,
+  },
+  screenshotHelpLinkText: {
+    fontSize: 15,
+    color: "#2A6CF6",
+    textDecorationLine: "underline",
+    fontWeight: "500",
+  },
+
+  // Centered card-style modal for the screenshot instructions. Big enough
+  // to fit the longest device variant comfortably; the body scrolls if
+  // the senior has cranked the font scale up.
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 480,
+    maxHeight: "85%",
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1A1F2C",
+    marginBottom: 16,
+  },
+  modalBodyScroll: {
+    flexGrow: 0,
+    marginBottom: 20,
+  },
+  modalBodyContent: {
+    paddingBottom: 4,
+  },
+  modalBody: {
+    fontSize: 18,
+    lineHeight: 26,
+    color: "#1A1F2C",
+  },
+  modalButton: {
+    backgroundColor: "#2A6CF6",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    alignItems: "center",
+    minHeight: 48,
+    justifyContent: "center",
+  },
+  modalButtonPressed: {
+    opacity: 0.85,
+  },
+  modalButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
   },
 });

@@ -217,10 +217,30 @@ const STRINGS = {
     opening_chat: "Opening your chat…",
 
     // Buddy greetings (rendered locally before any API call) ---------------
+    // The screenshot/picture nudge is included here so the senior sees it
+    // before they start typing — most issues are easier to diagnose with a
+    // picture, and the "How to take a screenshot" link below the bubble
+    // gives them the steps if they don't know how.
     buddy_greet_generic:
-      "Hi {name}! I'm Buddy. What can I help you with today?",
+      "Hi {name}! I'm Buddy. What can I help you with today? If you can, a picture or screenshot of what you're seeing helps me understand quickly.",
     buddy_greet_device:
-      "Hi {name}! I'm Buddy. I hear your {device} is giving you trouble — tell me what's happening.",
+      "Hi {name}! I'm Buddy. I hear your {device} is giving you trouble — tell me what's happening. If you can, a picture or screenshot of what you're seeing helps me understand quickly.",
+
+    // Screenshot help (link under the greeting + modal contents) -----------
+    screenshot_help_link: "How to take a screenshot",
+    screenshot_help_link_a11y: "Show me how to take a screenshot",
+    screenshot_help_modal_title: "How to take a screenshot",
+    screenshot_help_modal_close: "Got it",
+    screenshot_help_phone_ios:
+      "On this iPhone:\n\n1. Press the Side button and the Volume Up button at the same time.\n\n2. Let go right away — you'll see a small picture appear in the corner.\n\nThen come back here and tap the photo icon on the bottom-left to send it to me.",
+    screenshot_help_phone_android:
+      "On this phone:\n\n1. Press the Power button and the Volume Down button at the same time.\n\n2. Let go right away — you'll see a small picture preview.\n\nThen come back here and tap the photo icon on the bottom-left to send it to me.",
+    screenshot_help_tablet:
+      "On most tablets:\n\nPress the Top button and the Volume Up button at the same time, then let go right away.\n\nOn an older iPad with a round Home button: press the Home button and the Top button together.\n\nThe screenshot saves to your Photos.",
+    screenshot_help_computer:
+      "On a Windows PC:\n\nPress the Windows key, Shift, and S all at the same time, then drag a box around what you want to capture.\n\nOn a Mac:\n\nPress Command, Shift, and 4 all together, then drag a box.\n\nEmail the picture to yourself so you can open it on this phone and send it to me.",
+    screenshot_help_camera_only:
+      "TVs, printers, and Wi-Fi routers can't take screenshots — but you can use this phone's camera instead.\n\nTap the camera icon on the bottom-left and take a clear photo of what you're seeing.",
 
     noun_computer: "computer",
     noun_phone: "phone",
@@ -274,7 +294,7 @@ const STRINGS = {
   },
 
   fr: {
-    home_subtitle: "En quoi puis-je vous aider aujourd'hui ?",
+    home_subtitle: "En quoi puis-je vous aider aujourd'hui ?",
     get_help_now: "Obtenir de l'aide",
     get_help_now_helper: "Touchez ici pour commencer",
     get_help_now_a11y:
@@ -301,7 +321,7 @@ const STRINGS = {
     status_escalated: "Avec une personne",
 
     devices_header: "Obtenir de l'aide",
-    devices_q: "Quel appareil a besoin d'aide ?",
+    devices_q: "Quel appareil a besoin d'aide ?",
     devices_subtitle: "Choisissez l'appareil qui vous pose problème.",
 
     device_computer: "Ordinateur",
@@ -332,8 +352,8 @@ const STRINGS = {
     done: "Terminé",
     done_a11y: "J'ai terminé cette session d'aide",
     chat_title: "Buddy",
-    chat_done_title: "Tout est réglé ?",
-    chat_done_body: "Buddy vous a-t-il aidé à régler le problème ?",
+    chat_done_title: "Tout est réglé ?",
+    chat_done_body: "Buddy vous a-t-il aidé à régler le problème ?",
     chat_done_no: "Pas encore, continuons",
     chat_done_yes: "Oui, tout est réglé",
     type_placeholder: "Tapez votre message…",
@@ -429,7 +449,7 @@ const STRINGS = {
     about_me_link_desc:
       "Appareils et comptes que Buddy se rappellera.",
     buddy_thinking: "Buddy réfléchit...",
-    chips_hint: "Ou choisissez un problème courant :",
+    chips_hint: "Ou choisissez un problème courant :",
     chip_computer_signin: "Connexion impossible",
     chip_computer_suspicious: "Fenêtre suspecte",
     chip_computer_slow: "Très lent",
@@ -460,10 +480,25 @@ const STRINGS = {
     chip_other_printer: "Imprimante en panne",
     opening_chat: "Ouverture de votre conversation…",
 
+    screenshot_help_link: "Comment prendre une capture d'écran",
+    screenshot_help_link_a11y: "Montrez-moi comment prendre une capture d'écran",
+    screenshot_help_modal_title: "Comment prendre une capture d'écran",
+    screenshot_help_modal_close: "Compris",
+    screenshot_help_phone_ios:
+      "Sur cet iPhone :\n\n1. Appuyez sur le bouton latéral et le bouton Volume haut en même temps.\n\n2. Relâchez tout de suite — vous verrez une petite image apparaître dans le coin.\n\nRevenez ensuite ici et touchez l'icône photo en bas à gauche pour me l'envoyer.",
+    screenshot_help_phone_android:
+      "Sur ce téléphone :\n\n1. Appuyez sur le bouton d'alimentation et le bouton Volume bas en même temps.\n\n2. Relâchez tout de suite — vous verrez un petit aperçu de l'image.\n\nRevenez ensuite ici et touchez l'icône photo en bas à gauche pour me l'envoyer.",
+    screenshot_help_tablet:
+      "Sur la plupart des tablettes :\n\nAppuyez sur le bouton du haut et le bouton Volume haut en même temps, puis relâchez tout de suite.\n\nSur un iPad plus ancien avec un bouton Accueil rond : appuyez sur le bouton Accueil et le bouton du haut en même temps.\n\nLa capture d'écran est enregistrée dans vos Photos.",
+    screenshot_help_computer:
+      "Sur un PC Windows :\n\nAppuyez sur la touche Windows, Maj et S en même temps, puis tracez un rectangle autour de ce que vous voulez capturer.\n\nSur un Mac :\n\nAppuyez sur Commande, Maj et 4 en même temps, puis tracez un rectangle.\n\nEnvoyez-vous l'image par courriel pour pouvoir l'ouvrir sur ce téléphone et me l'envoyer.",
+    screenshot_help_camera_only:
+      "Les téléviseurs, imprimantes et routeurs Wi-Fi ne peuvent pas faire de captures d'écran — mais vous pouvez utiliser la caméra de ce téléphone.\n\nTouchez l'icône de l'appareil photo en bas à gauche et prenez une photo claire de ce que vous voyez.",
+
     buddy_greet_generic:
-      "Bonjour {name} ! Je suis Buddy. En quoi puis-je vous aider aujourd'hui ?",
+      "Bonjour {name} ! Je suis Buddy. En quoi puis-je vous aider aujourd'hui ? Si possible, une photo ou une capture d'écran de ce que vous voyez m'aide à comprendre rapidement.",
     buddy_greet_device:
-      "Bonjour {name} ! Je suis Buddy. Je vois que votre {device} vous donne du fil à retordre — dites-moi ce qui se passe.",
+      "Bonjour {name} ! Je suis Buddy. Je vois que votre {device} vous donne du fil à retordre — dites-moi ce qui se passe. Si possible, une photo ou une capture d'écran de ce que vous voyez m'aide à comprendre rapidement.",
 
     noun_computer: "ordinateur",
     noun_phone: "téléphone",

@@ -81,7 +81,28 @@ export default function DevicesScreen() {
         </Pressable>
 
         <Text style={styles.headerTitle}>{t("devices_header")}</Text>
-        <View style={styles.headerSpacer} />
+
+        {/*
+          Settings cog. Wrapped in a fixed-width container that mirrors the
+          back button's width so the centered title stays visually centered.
+        */}
+        <View style={styles.headerRight}>
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              router.push("/settings");
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings_a11y")}
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.settingsButton,
+              pressed && styles.settingsButtonPressed,
+            ]}
+          >
+            <Ionicons name="settings-outline" size={22} color="#2A6CF6" />
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -176,6 +197,26 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     minWidth: 80,
+  },
+  // Right-side container for the settings cog. Same minWidth as the back
+  // button so the centered title stays optically centered between them.
+  headerRight: {
+    minWidth: 80,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    paddingRight: 8,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: "#F1F4FB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingsButtonPressed: {
+    backgroundColor: "#E4ECFB",
+    transform: [{ scale: 0.96 }],
   },
   scrollContent: {
     paddingHorizontal: 20,

@@ -590,26 +590,51 @@ export default function ChatScreen() {
 
         <Text style={styles.headerTitle}>{t("chat_title")}</Text>
 
-        <Pressable
-          onPress={handleDone}
-          disabled={isSending}
-          accessibilityRole="button"
-          accessibilityLabel={t("done_a11y")}
-          style={({ pressed }) => [
-            styles.doneButton,
-            isSending && styles.doneButtonDisabled,
-            pressed && styles.doneButtonPressed,
-          ]}
-          hitSlop={12}
-        >
-          <Ionicons
-            name="checkmark-circle"
-            size={20}
-            color="#1F8A4C"
-            style={styles.doneIcon}
-          />
-          <Text style={styles.doneText}>{t("done")}</Text>
-        </Pressable>
+        {/*
+          Right-side cluster: settings cog + Done. Both small enough that
+          they fit alongside the back button without crowding. The cog sits
+          to the LEFT of Done so it doesn't compete with Done as the
+          primary positive action — Done stays the rightmost, most
+          prominent element.
+        */}
+        <View style={styles.headerRight}>
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              router.push("/settings");
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings_a11y")}
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.settingsButton,
+              pressed && styles.settingsButtonPressed,
+            ]}
+          >
+            <Ionicons name="settings-outline" size={22} color="#2A6CF6" />
+          </Pressable>
+
+          <Pressable
+            onPress={handleDone}
+            disabled={isSending}
+            accessibilityRole="button"
+            accessibilityLabel={t("done_a11y")}
+            style={({ pressed }) => [
+              styles.doneButton,
+              isSending && styles.doneButtonDisabled,
+              pressed && styles.doneButtonPressed,
+            ]}
+            hitSlop={12}
+          >
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color="#1F8A4C"
+              style={styles.doneIcon}
+            />
+            <Text style={styles.doneText}>{t("done")}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -1012,6 +1037,26 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     minWidth: 80,
+  },
+  // Right-side cluster: cog + Done sit side-by-side. Tight gap so they
+  // don't drift apart at larger font scales; both keep their senior-
+  // friendly tap targets via hitSlop.
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: "#F1F4FB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingsButtonPressed: {
+    backgroundColor: "#E4ECFB",
+    transform: [{ scale: 0.96 }],
   },
   doneButton: {
     flexDirection: "row",

@@ -320,6 +320,57 @@ export type FamilyInvite = {
 };
 
 /**
+ * One row in the senior-side "linked family members" list.
+ */
+export type SeniorFamilyLink = {
+  id: string;
+  familyUserId: string;
+  familyName: string;
+  /** Family-side nickname for the senior — only meaningful to the family. */
+  label: string | null;
+  /** ISO timestamp of when this link was created. */
+  createdAt: string;
+};
+
+/**
+ * List the family members currently linked to the authed senior.
+ * Used in mobile Settings to show + manage active links.
+ */
+export async function listMyFamilyLinks(): Promise<SeniorFamilyLink[]> {
+  const response = await fetch(`${API_URL}/v1/family/links`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Family links list failed (${response.status}): ${body || "no body"}`
+    );
+  }
+  const data = (await response.json()) as { links: SeniorFamilyLink[] };
+  return data.links;
+}
+
+/**
+ * Revoke a single family member's access. Senior-only. The family User
+ * row stays — they keep links to other seniors if they have any.
+ */
+export async function revokeFamilyLink(linkId: string): Promise<void> {
+  const response = await fetch(
+    `${API_URL}/v1/family/links/${encodeURIComponent(linkId)}`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    }
+  );
+  if (!response.ok && response.status !== 204) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Family link revoke failed (${response.status}): ${body || "no body"}`
+    );
+  }
+}
+
+/**
  * Generate a fresh family invite code. Authed as the senior.
  * Backend mints a 6-digit code with a 7-day TTL.
  *

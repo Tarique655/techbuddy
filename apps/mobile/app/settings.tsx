@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Linking,
   Pressable,
@@ -10,18 +11,23 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
 
 import { useAuth } from "@/lib/auth";
-import { useT, type Language } from "@/lib/i18n";
+import { useT, type Language, type StringKey } from "@/lib/i18n";
 import {
   useSettings,
   type FontScale,
 } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
 import { InviteFamilyModal } from "@/components/invite-family-modal";
+import {
+  listMyFamilyLinks,
+  revokeFamilyLink,
+  type SeniorFamilyLink,
+} from "@/lib/api";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -140,6 +146,15 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="people-outline" size={22} color="#2A6CF6" />
           </Pressable>
+
+          <View style={styles.divider} />
+
+          <FamilyLinksList
+            // Refetch the list whenever the invite modal closes — a senior
+            // who just generated a code may have a family member accept it
+            // before they navigate away from Settings.
+            refetchKey={inviteFamilyOpen ? "open" : "closed"}
+          />
         </Section>
 
         {/* Sound & speech -------------------------------------------- */}
@@ -347,6 +362,175 @@ function ToggleRow({
       />
     </View>
   );
+}
+
+/**
+ * Senior-side list of currently linked family members. Lives inside the
+ * Family section beneath the "Invite a family member" row. Three states:
+ *
+ *   - loading   → spinner
+ *   - error     → muted error line with no retry; reopening Settings refetches
+ *   - ready     → list of rows OR an empty-state line
+ *
+ * Each row shows the family member's name, optional family-side label, and
+ * a Remove button that confirms via Alert.alert before calling DELETE.
+ */
+function FamilyLinksList({ refetchKey }: { refetchKey: string }) {
+  const { t, language } = useT();
+  const haptics = useHaptics();
+
+  const [state, setState] = useState<
+    | { kind: "loading" }
+    | { kind: "ready"; links: SeniorFamilyLink[] }
+    | { kind: "error" }
+  >({ kind: "loading" });
+
+  const load = useCallback(() => {
+    setState({ kind: "loading" });
+    listMyFamilyLinks()
+      .then((links) => setState({ kind: "ready", links }))
+      .catch((err: unknown) => {
+        console.error("[settings] family links load failed", err);
+        setState({ kind: "error" });
+      });
+  }, []);
+
+  // Refetch on focus so a freshly-accepted invite shows up the next time
+  // the senior visits Settings.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  // Refetch when the invite modal opens or closes — a code shared mid-
+  // session may be accepted before the user leaves the screen.
+  useEffect(() => {
+    load();
+  }, [load, refetchKey]);
+
+  function handleRemove(link: SeniorFamilyLink) {
+    haptics.selection();
+    const displayName = link.familyName;
+    Alert.alert(
+      t("family_links_remove_confirm_title", { name: displayName }),
+      t("family_links_remove_confirm_body", { name: displayName }),
+      [
+        { text: t("family_links_remove_confirm_no"), style: "cancel" },
+        {
+          text: t("family_links_remove_confirm_yes"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await revokeFamilyLink(link.id);
+              haptics.notificationSuccess();
+              load();
+            } catch (err) {
+              console.error("[settings] revoke failed", err);
+              Alert.alert(
+                t("family_links_remove_error_title"),
+                t("family_links_remove_error_body"),
+                [{ text: t("alert_ok") }]
+              );
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }
+
+  return (
+    <View style={styles.linksWrap}>
+      <Text style={styles.linksHeader}>{t("family_links_title")}</Text>
+
+      {state.kind === "loading" ? (
+        <View style={styles.linksLoading}>
+          <ActivityIndicator size="small" color="#5A6173" />
+          <Text style={styles.linksLoadingText}>
+            {t("family_links_loading")}
+          </Text>
+        </View>
+      ) : state.kind === "error" ? (
+        <Text style={styles.linksError}>{t("family_links_load_error")}</Text>
+      ) : state.links.length === 0 ? (
+        <Text style={styles.linksEmpty}>{t("family_links_empty")}</Text>
+      ) : (
+        state.links.map((link) => (
+          <FamilyLinkRow
+            key={link.id}
+            link={link}
+            language={language}
+            onRemove={() => handleRemove(link)}
+          />
+        ))
+      )}
+    </View>
+  );
+}
+
+/**
+ * One row in the linked-family list. Renders the family member's display
+ * name, the optional label they chose for the senior (in muted text), the
+ * "added X days ago" line, and a Remove button.
+ */
+function FamilyLinkRow({
+  link,
+  language,
+  onRemove,
+}: {
+  link: SeniorFamilyLink;
+  language: Language;
+  onRemove: () => void;
+}) {
+  const { t } = useT();
+  const when = formatLinkAddedWhen(link.createdAt, language, t);
+  return (
+    <View style={styles.linkRow}>
+      <View style={styles.linkRowText}>
+        <Text style={styles.linkRowName}>{link.familyName}</Text>
+        {link.label ? (
+          <Text style={styles.linkRowLabel}>“{link.label}”</Text>
+        ) : null}
+        <Text style={styles.linkRowWhen}>
+          {t("family_links_added_when", { when })}
+        </Text>
+      </View>
+      <Pressable
+        onPress={onRemove}
+        accessibilityRole="button"
+        accessibilityLabel={`${t("family_links_remove")} ${link.familyName}`}
+        hitSlop={8}
+        style={({ pressed }) => [
+          styles.linkRemoveButton,
+          pressed && styles.linkRemoveButtonPressed,
+        ]}
+      >
+        <Text style={styles.linkRemoveText}>{t("family_links_remove")}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/**
+ * Format a "when" string for the linked-family row in the senior's chosen
+ * language. Same pattern as history.tsx but without the "minutes ago"
+ * granularity — link creation is always coarse-grained.
+ */
+function formatLinkAddedWhen(
+  iso: string,
+  language: Language,
+  t: (key: StringKey, vars?: Record<string, string | number>) => string
+): string {
+  const then = new Date(iso);
+  const diffMs = Date.now() - then.getTime();
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  if (days < 1) return t("time_now");
+  if (days === 1) return t("time_yesterday");
+  if (days < 7) return t("time_days_ago", { n: days });
+  const locale =
+    language === "fr" ? "fr-CA" : language === "es" ? "es-ES" : undefined;
+  return then.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
 const styles = StyleSheet.create({
@@ -557,5 +741,83 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#5A6173",
     lineHeight: 19,
+  },
+
+  // Linked-family-members list (sits below the divider in the Family card).
+  linksWrap: {
+    paddingTop: 4,
+  },
+  linksHeader: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#5A6173",
+    letterSpacing: 0.4,
+    marginBottom: 10,
+    textTransform: "uppercase",
+  },
+  linksLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+  },
+  linksLoadingText: {
+    fontSize: 14,
+    color: "#5A6173",
+  },
+  linksEmpty: {
+    fontSize: 14,
+    color: "#5A6173",
+    fontStyle: "italic",
+    paddingVertical: 4,
+    lineHeight: 19,
+  },
+  linksError: {
+    fontSize: 14,
+    color: "#C8312D",
+    paddingVertical: 4,
+    lineHeight: 19,
+  },
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  linkRowText: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  linkRowName: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#1A1F2C",
+    marginBottom: 2,
+  },
+  linkRowLabel: {
+    fontSize: 14,
+    color: "#5A6173",
+    fontStyle: "italic",
+    marginBottom: 2,
+  },
+  linkRowWhen: {
+    fontSize: 13,
+    color: "#8E96A8",
+  },
+  linkRemoveButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#FBEEED",
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  linkRemoveButtonPressed: {
+    backgroundColor: "#F5D9D7",
+  },
+  linkRemoveText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#C8312D",
   },
 });

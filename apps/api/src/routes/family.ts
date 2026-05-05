@@ -272,6 +272,97 @@ export async function familyRoutes(fastify: FastifyInstance) {
   });
 
   // ---------------------------------------------------------------------------
+  // GET /v1/family/links — senior view of who's linked to them.
+  //
+  // Used in mobile Settings to show "these family members can see your help
+  // sessions". Returns the family member's display name, optional label
+  // they chose for the senior, and when the link was created.
+  // ---------------------------------------------------------------------------
+  fastify.get("/v1/family/links", async (request, reply) => {
+    const userId = request.userId;
+
+    const me = await db.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!me) return reply.code(401).send({ error: "user_not_found" });
+    if (me.role !== UserRole.SENIOR) {
+      return reply.code(403).send({
+        error: "forbidden",
+        message: "Only seniors can view their linked family members.",
+      });
+    }
+
+    const links = await db.familyLink.findMany({
+      where: { seniorUserId: userId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        family: { select: { id: true, name: true } },
+      },
+    });
+
+    return reply.send({
+      links: links.map((l) => ({
+        id: l.id,
+        familyUserId: l.family.id,
+        familyName: l.family.name,
+        label: l.label,
+        createdAt: l.createdAt.toISOString(),
+      })),
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // DELETE /v1/family/links/:id — senior revokes a family member's access.
+  //
+  // The FamilyLink row is deleted. The family User row is intentionally NOT
+  // deleted — they may still be linked to other seniors, and we don't want
+  // a revoke from one senior to lock them out everywhere. If they hold no
+  // remaining links after this, their account simply has no seniors to
+  // observe (the dashboard's empty state takes over).
+  // ---------------------------------------------------------------------------
+  fastify.delete<{ Params: { id: string } }>(
+    "/v1/family/links/:id",
+    async (request, reply) => {
+      const userId = request.userId;
+      const linkId = request.params.id;
+
+      const me = await db.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      if (!me) return reply.code(401).send({ error: "user_not_found" });
+      if (me.role !== UserRole.SENIOR) {
+        return reply.code(403).send({
+          error: "forbidden",
+          message: "Only seniors can revoke family-member access.",
+        });
+      }
+
+      // Authorization: the link must belong to this senior. Use 404 (not
+      // 403) on cross-account access to avoid leaking link existence.
+      const link = await db.familyLink.findFirst({
+        where: { id: linkId, seniorUserId: userId },
+        select: { id: true },
+      });
+      if (!link) {
+        return reply.code(404).send({
+          error: "link_not_found",
+          message: "We couldn't find that family member in your linked list.",
+        });
+      }
+
+      await db.familyLink.delete({ where: { id: linkId } });
+      request.log.info(
+        { linkId, seniorUserId: userId },
+        "family link revoked"
+      );
+
+      return reply.code(204).send();
+    }
+  );
+
+  // ---------------------------------------------------------------------------
   // GET /v1/family/seniors/:id/sessions — session list for a linked senior.
   //
   // Each session includes the AI-generated summary (when available) so the

@@ -332,6 +332,23 @@ const STRINGS = {
     invite_family_share: "Share code",
     invite_family_share_message:
       "Hi! I'm using TechBuddy. Here's a code to see how I'm doing: {code}. Go to {url} and type it in.",
+
+    // Linked family members management (senior-side, in Settings) ----------
+    family_links_title: "Family who can see your help",
+    family_links_loading: "Loading…",
+    family_links_empty:
+      "Nobody yet. Share a code with a family member to add them.",
+    family_links_load_error: "Couldn't load your family list.",
+    family_links_added_when: "Added {when}",
+    family_links_remove: "Remove",
+    family_links_remove_confirm_title: "Remove {name}?",
+    family_links_remove_confirm_body:
+      "{name} won't be able to see your help sessions anymore. You can always invite them again later.",
+    family_links_remove_confirm_yes: "Yes, remove",
+    family_links_remove_confirm_no: "Cancel",
+    family_links_remove_error_title: "Couldn't remove that person",
+    family_links_remove_error_body:
+      "Please check your internet connection and try again.",
     invite_family_close: "Done",
   },
 
@@ -628,6 +645,22 @@ const STRINGS = {
     invite_family_share: "Partager le code",
     invite_family_share_message:
       "Bonjour ! J'utilise TechBuddy. Voici un code pour voir comment je vais : {code}. Allez sur {url} et saisissez-le.",
+
+    family_links_title: "Famille qui voit votre aide",
+    family_links_loading: "Chargement…",
+    family_links_empty:
+      "Personne pour l'instant. Partagez un code avec un membre de la famille pour l'ajouter.",
+    family_links_load_error: "Impossible de charger votre liste familiale.",
+    family_links_added_when: "Ajouté(e) {when}",
+    family_links_remove: "Retirer",
+    family_links_remove_confirm_title: "Retirer {name} ?",
+    family_links_remove_confirm_body:
+      "{name} ne pourra plus voir vos sessions d'aide. Vous pourrez toujours l'inviter de nouveau plus tard.",
+    family_links_remove_confirm_yes: "Oui, retirer",
+    family_links_remove_confirm_no: "Annuler",
+    family_links_remove_error_title: "Impossible de retirer cette personne",
+    family_links_remove_error_body:
+      "Veuillez vérifier votre connexion internet et réessayer.",
     invite_family_close: "Terminé",
   },
 
@@ -913,6 +946,22 @@ const STRINGS = {
     invite_family_share: "Compartir código",
     invite_family_share_message:
       "¡Hola! Estoy usando TechBuddy. Aquí tiene un código para ver cómo me va: {code}. Vaya a {url} y escríbalo.",
+
+    family_links_title: "Familia que ve su ayuda",
+    family_links_loading: "Cargando…",
+    family_links_empty:
+      "Nadie aún. Comparta un código con un familiar para añadirlo.",
+    family_links_load_error: "No se pudo cargar su lista de familiares.",
+    family_links_added_when: "Añadido el {when}",
+    family_links_remove: "Quitar",
+    family_links_remove_confirm_title: "¿Quitar a {name}?",
+    family_links_remove_confirm_body:
+      "{name} ya no podrá ver sus sesiones de ayuda. Siempre puede invitarle de nuevo más adelante.",
+    family_links_remove_confirm_yes: "Sí, quitar",
+    family_links_remove_confirm_no: "Cancelar",
+    family_links_remove_error_title: "No se pudo quitar a esa persona",
+    family_links_remove_error_body:
+      "Por favor, compruebe su conexión a Internet y vuelva a intentarlo.",
     invite_family_close: "Listo",
   },
 } as const;

@@ -322,11 +322,18 @@ export type FamilyInvite = {
 /**
  * Generate a fresh family invite code. Authed as the senior.
  * Backend mints a 6-digit code with a 7-day TTL.
+ *
+ * NOTE: we send an empty `{}` body even though the route doesn't need any
+ * input — Fastify rejects POSTs with `Content-Type: application/json` but
+ * no body (FST_ERR_CTP_EMPTY_JSON_BODY). Either drop the header or send
+ * an empty object; we send the object so the request shape stays uniform
+ * with every other authed POST in this file.
  */
 export async function createFamilyInvite(): Promise<FamilyInvite> {
   const response = await fetch(`${API_URL}/v1/family/invites`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({}),
   });
   if (!response.ok) {
     const body = await response.text().catch(() => "");

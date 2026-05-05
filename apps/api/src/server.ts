@@ -17,6 +17,7 @@ import { registerAuth } from "./lib/auth.js";
 import { bugReportRoutes } from "./routes/bug-reports.js";
 import { chatRoutes } from "./routes/chat.js";
 import { debugRoutes } from "./routes/debug.js";
+import { familyRoutes } from "./routes/family.js";
 import { sessionsRoutes } from "./routes/sessions.js";
 import { userContextRoutes } from "./routes/user-context.js";
 import { userRoutes } from "./routes/users.js";
@@ -68,6 +69,7 @@ await fastify.register(chatRoutes);
 await fastify.register(sessionsRoutes);
 await fastify.register(userContextRoutes);
 await fastify.register(bugReportRoutes);
+await fastify.register(familyRoutes);
 await fastify.register(debugRoutes);
 
 try {

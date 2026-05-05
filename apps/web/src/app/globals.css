@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Light theme only for v1. The senior app is auto light/dark via the OS;
+ * the family portal is daytime-desktop usage and looks better with a
+ * single, consistent light palette tied to the brand.
+ */
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: #f7f8fc;
+  color: #1a1f2c;
+}
+
+* {
+  box-sizing: border-box;
+}

@@ -27,8 +27,15 @@ cp .env.example apps/api/.env   # then fill in real values
 pnpm dev:api                    # starts backend on :4000
 pnpm dev:web                    # starts family portal on :3000
 pnpm dev:mobile                 # starts Expo dev server
-pnpm dev:desktop                # starts Electron in dev
+pnpm dev:desktop                # starts Electron in dev (placeholder)
 ```
+
+## Surface-specific docs
+
+- `FAMILY_PORTAL.md` — architecture + dev + deploy guide for the web app
+- `TECH_DEBT.md` — known shortcuts and follow-ups
+- `apps/api/README.md` — backend specifics
+- `apps/mobile/README.md` — mobile specifics
 
 ## Design principles (from the project doc)
 

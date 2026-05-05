@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Alert,
   Linking,
@@ -20,6 +21,7 @@ import {
   type FontScale,
 } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
+import { InviteFamilyModal } from "@/components/invite-family-modal";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -27,6 +29,7 @@ export default function SettingsScreen() {
   const { settings, setSetting } = useSettings();
   const haptics = useHaptics();
   const { user } = useAuth();
+  const [inviteFamilyOpen, setInviteFamilyOpen] = useState(false);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -115,6 +118,30 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={22} color="#5A6173" />
         </Pressable>
 
+        {/* Family ----------------------------------------------------- */}
+        <Section title={t("invite_family_section")}>
+          <Pressable
+            onPress={() => {
+              haptics.selection();
+              setInviteFamilyOpen(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t("invite_family_link")}
+            style={({ pressed }) => [
+              styles.familyRow,
+              pressed && styles.familyRowPressed,
+            ]}
+          >
+            <View style={styles.familyText}>
+              <Text style={styles.familyLabel}>{t("invite_family_link")}</Text>
+              <Text style={styles.familyDesc}>
+                {t("invite_family_link_desc")}
+              </Text>
+            </View>
+            <Ionicons name="people-outline" size={22} color="#2A6CF6" />
+          </Pressable>
+        </Section>
+
         {/* Sound & speech -------------------------------------------- */}
         <Section title={t("settings_section_audio")}>
           <ToggleRow
@@ -197,6 +224,11 @@ export default function SettingsScreen() {
           </Pressable>
         </Section>
       </ScrollView>
+
+      <InviteFamilyModal
+        visible={inviteFamilyOpen}
+        onClose={() => setInviteFamilyOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -501,4 +533,29 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   aboutMeDesc: { fontSize: 14, color: "#5A6173", lineHeight: 19 },
+
+  // Family invite row — sits inside the "Family" Section card.
+  familyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  familyRowPressed: {
+    opacity: 0.65,
+  },
+  familyText: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  familyLabel: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1A1F2C",
+    marginBottom: 2,
+  },
+  familyDesc: {
+    fontSize: 14,
+    color: "#5A6173",
+    lineHeight: 19,
+  },
 });

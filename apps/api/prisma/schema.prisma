@@ -49,6 +49,18 @@ model User {
   contexts   UserContext[]
   bugReports BugReport[]
 
+  // Family-portal links — a senior may be observed by many family members,
+  // and a family member may have many seniors. Modeled as an explicit join
+  // table (FamilyLink) so we can attach metadata (createdAt, label, etc.)
+  // without an opaque junction.
+  familyLinksAsSenior FamilyLink[] @relation("LinksWhereSenior")
+  familyLinksAsFamily FamilyLink[] @relation("LinksWhereFamily")
+  // Invites this user (a senior) has generated for family to redeem.
+  invitesCreated      FamilyInvite[] @relation("InvitesByCreator")
+  // Invites this user (a family member) has accepted. Soft pointer used
+  // for audit only — the resulting FamilyLink is the load-bearing record.
+  invitesAccepted     FamilyInvite[] @relation("InvitesByAcceptor")
+
   @@map("users")
 }
 
@@ -238,4 +250,59 @@ model BugReport {
   @@index([userId, createdAt])
   @@index([screen, createdAt])
   @@map("bug_reports")
+}
+
+// =============================================================================
+// FAMILY PORTAL
+// =============================================================================
+
+/// Many-to-many link between a senior and a family member observing them.
+/// Created when a family member redeems a FamilyInvite at the web portal.
+/// Cascades on either side so deleting an account cleans up its links.
+model FamilyLink {
+  id            String   @id @default(cuid())
+  /// The User row with role=SENIOR being observed.
+  seniorUserId  String   @map("senior_user_id")
+  /// The User row with role=FAMILY doing the observing.
+  familyUserId  String   @map("family_user_id")
+  /// Optional family-side label, e.g. "Mom", "Grandpa Joe". Set by the
+  /// family member on accept (senior never sees it).
+  label         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  senior User @relation("LinksWhereSenior", fields: [seniorUserId], references: [id], onDelete: Cascade)
+  family User @relation("LinksWhereFamily", fields: [familyUserId], references: [id], onDelete: Cascade)
+
+  // A given (family, senior) pair only gets one link row.
+  @@unique([familyUserId, seniorUserId])
+  @@index([seniorUserId])
+  @@index([familyUserId])
+  @@map("family_links")
+}
+
+/// One-time invite codes the senior generates from the mobile Settings
+/// screen. Family enters the code in the web portal to create their
+/// account and link to the senior. Codes are short (6 digits) and
+/// time-bound; longer term we'll move to alphanumeric + larger keyspace.
+model FamilyInvite {
+  id              String    @id @default(cuid())
+  /// 6-digit numeric code (string so leading zeros survive). Unique
+  /// across the live invite namespace — collisions are retried on insert.
+  code            String    @unique
+  /// The senior who generated this invite. Must have role=SENIOR.
+  createdByUserId String    @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  /// Codes expire 7 days after creation by default.
+  expiresAt       DateTime  @map("expires_at")
+  /// When the family member accepted, NULL while pending.
+  acceptedAt      DateTime? @map("accepted_at")
+  /// User id of the family member who accepted, NULL while pending.
+  acceptedByUserId String?  @map("accepted_by_user_id")
+
+  createdBy  User  @relation("InvitesByCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  acceptedBy User? @relation("InvitesByAcceptor", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdByUserId, createdAt])
+  @@index([expiresAt])
+  @@map("family_invites")
 }

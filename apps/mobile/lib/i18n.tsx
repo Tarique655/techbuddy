@@ -315,6 +315,24 @@ const STRINGS = {
     bug_report_error_title: "Couldn't send that report",
     bug_report_error_body:
       "Please check your internet connection and try again.",
+
+    // Invite-a-family-member flow (senior-side, in Settings) ---------------
+    invite_family_section: "Family",
+    invite_family_link: "Invite a family member",
+    invite_family_link_desc:
+      "Give a family member a code so they can see how Buddy is helping you.",
+    invite_family_modal_title: "Invite a family member",
+    invite_family_modal_body:
+      "Share this code with a family member. They'll go to {url} and type it in.",
+    invite_family_modal_loading: "Making your code…",
+    invite_family_modal_error_title: "Couldn't make your code",
+    invite_family_modal_error_body:
+      "Please check your internet connection and try again.",
+    invite_family_modal_expires: "This code works for 7 days.",
+    invite_family_share: "Share code",
+    invite_family_share_message:
+      "Hi! I'm using TechBuddy. Here's a code to see how I'm doing: {code}. Go to {url} and type it in.",
+    invite_family_close: "Done",
   },
 
   fr: {
@@ -594,6 +612,23 @@ const STRINGS = {
     bug_report_error_title: "Impossible d'envoyer le signalement",
     bug_report_error_body:
       "Veuillez vérifier votre connexion internet et réessayer.",
+
+    invite_family_section: "Famille",
+    invite_family_link: "Inviter un membre de la famille",
+    invite_family_link_desc:
+      "Donnez un code à un membre de la famille pour qu'il voie comment Buddy vous aide.",
+    invite_family_modal_title: "Inviter un membre de la famille",
+    invite_family_modal_body:
+      "Partagez ce code avec un membre de la famille. Il ira sur {url} et le saisira.",
+    invite_family_modal_loading: "Création de votre code…",
+    invite_family_modal_error_title: "Impossible de créer le code",
+    invite_family_modal_error_body:
+      "Veuillez vérifier votre connexion internet et réessayer.",
+    invite_family_modal_expires: "Ce code fonctionne pendant 7 jours.",
+    invite_family_share: "Partager le code",
+    invite_family_share_message:
+      "Bonjour ! J'utilise TechBuddy. Voici un code pour voir comment je vais : {code}. Allez sur {url} et saisissez-le.",
+    invite_family_close: "Terminé",
   },
 
   // ==========================================================================
@@ -862,6 +897,23 @@ const STRINGS = {
     bug_report_error_title: "No se pudo enviar el informe",
     bug_report_error_body:
       "Por favor, compruebe su conexión a Internet y vuelva a intentarlo.",
+
+    invite_family_section: "Familia",
+    invite_family_link: "Invitar a un familiar",
+    invite_family_link_desc:
+      "Dele un código a un familiar para que pueda ver cómo le ayuda Buddy.",
+    invite_family_modal_title: "Invitar a un familiar",
+    invite_family_modal_body:
+      "Comparta este código con un familiar. Entrará en {url} y lo escribirá.",
+    invite_family_modal_loading: "Creando su código…",
+    invite_family_modal_error_title: "No se pudo crear el código",
+    invite_family_modal_error_body:
+      "Por favor, compruebe su conexión a Internet y vuelva a intentarlo.",
+    invite_family_modal_expires: "Este código funciona durante 7 días.",
+    invite_family_share: "Compartir código",
+    invite_family_share_message:
+      "¡Hola! Estoy usando TechBuddy. Aquí tiene un código para ver cómo me va: {code}. Vaya a {url} y escríbalo.",
+    invite_family_close: "Listo",
   },
 } as const;
 

@@ -308,4 +308,34 @@ export async function submitBugReport(
   return (await response.json()) as { id: string };
 }
 
+// ===========================================================================
+// Family invites (senior-side only)
+// ===========================================================================
+
+export type FamilyInvite = {
+  id: string;
+  code: string;
+  /** ISO timestamp when this invite stops working. */
+  expiresAt: string;
+};
+
+/**
+ * Generate a fresh family invite code. Authed as the senior.
+ * Backend mints a 6-digit code with a 7-day TTL.
+ */
+export async function createFamilyInvite(): Promise<FamilyInvite> {
+  const response = await fetch(`${API_URL}/v1/family/invites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Family invite create failed (${response.status}): ${body || "no body"}`
+    );
+  }
+  const data = (await response.json()) as { invite: FamilyInvite };
+  return data.invite;
+}
+
 export { API_URL };

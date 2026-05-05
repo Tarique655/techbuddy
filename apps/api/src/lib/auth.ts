@@ -23,6 +23,9 @@ function isAllowlisted(method: string, url: string): boolean {
   if (url === "/healthz") return true;
   // Onboarding: the senior creates a brand-new user before they have an id.
   if (method === "POST" && url === "/v1/users") return true;
+  // Family portal: a family member accepting an invite doesn't yet have a
+  // user id. Accept creates the User row + FamilyLink and returns auth.
+  if (method === "POST" && url === "/v1/family/accept") return true;
   return false;
 }
 

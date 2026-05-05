@@ -9,8 +9,7 @@
       "distribution": "internal",
       "node": "22.11.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com"
       },
       "channel": "development"
     },
@@ -18,8 +17,7 @@
       "distribution": "internal",
       "node": "22.11.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com"
       },
       "channel": "preview"
     },
@@ -27,8 +25,7 @@
       "autoIncrement": true,
       "node": "22.11.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "EXPO_PUBLIC_API_URL": "https://techbuddy-api.onrender.com"
       },
       "channel": "production"
     }

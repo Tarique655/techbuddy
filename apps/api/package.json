@@ -13,7 +13,8 @@
     "build": "prisma generate && tsc",
     "start": "prisma migrate deploy && node --import ./dist/instrument.js dist/server.js",
     "lint": "echo skipped",
-    "typecheck": "tsc --noEmit"
+    "// typecheck": "prisma generate populates node_modules/.prisma/client/index.d.ts which exports User/UserRole/MessageRole/etc. TypeScript can't resolve those imports without it, even though the @prisma/client package itself is installed. Keep both steps in this script so CI (and any other caller) gets a self-contained typecheck.",
+    "typecheck": "prisma generate && tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.0",

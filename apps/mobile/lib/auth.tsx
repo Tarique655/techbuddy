@@ -10,7 +10,12 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 
-import { setApiUserId } from "./api";
+import { exchangeAuthToken, setApiAuth } from "./api";
+import {
+  clearAuthToken,
+  getAuthToken,
+  setAuthToken,
+} from "./auth-token";
 
 /**
  * Where the user blob lives.
@@ -21,9 +26,15 @@ import { setApiUserId } from "./api";
  * it impersonates the account.
  *
  * It now lives in `expo-secure-store`, which wraps iOS Keychain and
- * Android Keystore. On first launch after this change, we migrate any
+ * Android Keystore. On first launch after that change, we migrate any
  * existing AsyncStorage value into SecureStore and remove the legacy
  * copy, so existing testers don't get logged out.
+ *
+ * Stage B (2026-05-06 evening): the JWT lives separately in
+ * `techbuddy.auth.token.v1`; see `lib/auth-token.ts`. Keeping them
+ * under different keys means a failed write to one can't corrupt the
+ * other, and we can independently detect "have user, no token" — the
+ * trigger for the legacy-id → JWT exchange path below.
  */
 const STORAGE_KEY = "techbuddy.user.v1";
 
@@ -32,11 +43,22 @@ export type AuthUser = {
   name: string;
 };
 
+/** Combined session shape passed when signing in. Onboarding produces
+ *  this (createUser returns {user, token}); sign-out passes null. */
+export type AuthSession = {
+  user: AuthUser;
+  token: string;
+};
+
 type AuthContextValue = {
   /** Currently signed-in user, or null if no onboarding has happened yet. */
   user: AuthUser | null;
-  /** Replace the current user (used during onboarding and sign-out). */
-  setUser: (next: AuthUser | null) => void;
+  /**
+   * Replace the current session. Pass `{user, token}` on sign-in
+   * (onboarding); pass `null` to sign out. Persists user blob +
+   * JWT atomically and updates the api module's auth state.
+   */
+  setSession: (next: AuthSession | null) => void;
   /** True after hydration completes. Wait for this before routing. */
   ready: boolean;
 };
@@ -62,7 +84,7 @@ function isAuthUser(value: unknown): value is AuthUser {
  * first successful migration, subsequent launches read directly from
  * SecureStore — AsyncStorage is no longer touched for auth.
  */
-async function loadAndMigrate(): Promise<AuthUser | null> {
+async function loadUserAndMigrate(): Promise<AuthUser | null> {
   // 1. Primary path: SecureStore.
   try {
     const secure = await SecureStore.getItemAsync(STORAGE_KEY);
@@ -125,6 +147,45 @@ async function persistUser(next: AuthUser | null): Promise<void> {
   }
 }
 
+/**
+ * Full-session loader for app start.
+ *
+ * Decision tree:
+ *   - No user blob anywhere → not signed in. Caller routes to onboarding.
+ *   - User blob, no token in SecureStore → upgrade path. Try
+ *     /v1/auth/exchange once. On success, persist the new token.
+ *     On failure (network, API 5xx), set token=null and let the api
+ *     module fall back to the legacy X-User-Id header for this session.
+ *   - User blob AND token → straight Bearer henceforth.
+ *
+ * Returns the resolved session (user + token | null) or null if no user.
+ * The caller hands this off to setApiAuth + setUserState.
+ */
+async function loadSession(): Promise<{
+  user: AuthUser;
+  token: string | null;
+} | null> {
+  const user = await loadUserAndMigrate();
+  if (!user) return null;
+
+  // Primary: existing JWT in SecureStore.
+  let token = await getAuthToken();
+  if (token) return { user, token };
+
+  // Migration: no token yet. Try to exchange the legacy id for one.
+  // The exchange endpoint is allowlisted from auth on the API side,
+  // so it works regardless of whether AUTH_ACCEPT_BEARER is on.
+  try {
+    token = await exchangeAuthToken(user.id);
+    await setAuthToken(token);
+    return { user, token };
+  } catch {
+    // Network / API failure. The api module will fall back to sending
+    // X-User-Id this session. Next app launch will retry the exchange.
+    return { user, token: null };
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [ready, setReady] = useState(false);
@@ -132,10 +193,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Hydrate from disk on mount.
   useEffect(() => {
     let cancelled = false;
-    loadAndMigrate()
-      .then((u) => {
+    loadSession()
+      .then((session) => {
         if (cancelled) return;
-        if (u) setUserState(u);
+        if (session) {
+          setUserState(session.user);
+          setApiAuth({ userId: session.user.id, token: session.token });
+        }
       })
       .catch(() => {})
       .finally(() => {
@@ -146,20 +210,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Keep the api module's user id in sync so all fetches send the right
-  // X-User-Id header. Call on every user change, including hydration.
-  useEffect(() => {
-    setApiUserId(user?.id ?? null);
-  }, [user]);
-
-  const setUser = useCallback((next: AuthUser | null) => {
-    setUserState(next);
-    void persistUser(next);
+  const setSession = useCallback((next: AuthSession | null) => {
+    if (next) {
+      // Sign-in path: state + persistence + api-module update, in that
+      // order. State first so any consumer who's watching `user` in a
+      // useEffect can race-fetch without waiting for the disk write;
+      // setApiAuth before persistence so even if the SecureStore write
+      // is delayed, the next API call uses the new token.
+      setUserState(next.user);
+      setApiAuth({ userId: next.user.id, token: next.token });
+      void persistUser(next.user);
+      void setAuthToken(next.token);
+    } else {
+      // Sign-out: wipe everything.
+      setUserState(null);
+      setApiAuth(null);
+      void persistUser(null);
+      void clearAuthToken();
+    }
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, setUser, ready }),
-    [user, setUser, ready]
+    () => ({ user, setSession, ready }),
+    [user, setSession, ready]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -12,6 +12,18 @@
  * live in @techbuddy/shared so this app and the family portal can't
  * drift apart. Anything mobile-only (mobile API request shapes, local
  * UI types) stays in this file.
+ *
+ * Auth model (Stage B+):
+ *   - Authorization: Bearer <jwt> is the preferred header. Issued by the
+ *     API at onboarding (`POST /v1/users` returns `{user, token}`) and at
+ *     legacy-id upgrade (`POST /v1/auth/exchange`).
+ *   - X-User-Id is the legacy fallback. The API still accepts it while
+ *     AUTH_ACCEPT_BEARER is on (Stage A multi-mode); we keep sending it
+ *     when no JWT is available, so a hydration where SecureStore lost
+ *     the token doesn't lock the senior out.
+ *   - Sliding renewal: if the API is going to renew our token, it rides
+ *     the response back as the X-Renewed-Token header. The fetch wrapper
+ *     catches it and persists the new token to SecureStore.
  */
 import type {
   DeviceKey,
@@ -20,28 +32,153 @@ import type {
   SessionStatus,
 } from "@techbuddy/shared";
 
+import { setAuthToken } from "./auth-token";
+
 export type { DeviceKey, ImageInput, MessageRole, SessionStatus };
 
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000";
 
 // =============================================================================
-// Auth header plumbing
+// Auth state (module-local, set by AuthProvider)
 // =============================================================================
 //
-// AuthProvider calls setApiUserId() whenever the senior's user id changes
+// AuthProvider calls setApiAuth() whenever the senior's session changes
 // (hydration, onboarding completion, sign-out). We stash it module-locally
-// and inject it into every fetch via the X-User-Id header. The backend
-// pre-handler validates it against the users table.
+// so authedFetch can synchronously inject the right header on every call.
+//
+// Token may be null even when userId is set — happens when SecureStore
+// lost the JWT, or when /v1/auth/exchange failed during hydration. In
+// that case we fall back to the legacy X-User-Id header.
 
-let _currentUserId: string | null = null;
-
-export function setApiUserId(id: string | null): void {
-  _currentUserId = id;
+interface ApiAuth {
+  userId: string;
+  /** Null = no JWT yet; the legacy X-User-Id path will be used. */
+  token: string | null;
 }
 
+let _currentAuth: ApiAuth | null = null;
+
+export function setApiAuth(next: ApiAuth | null): void {
+  _currentAuth = next;
+}
+
+/** Construct the auth header pair for a request. Bearer wins if available. */
 function authHeaders(): Record<string, string> {
-  return _currentUserId ? { "X-User-Id": _currentUserId } : {};
+  if (!_currentAuth) return {};
+  if (_currentAuth.token) {
+    return { Authorization: `Bearer ${_currentAuth.token}` };
+  }
+  return { "X-User-Id": _currentAuth.userId };
+}
+
+// =============================================================================
+// 401 recovery
+// =============================================================================
+//
+// If the API rejects our token (e.g. JWT_SECRET was rotated server-side, or
+// the user's tokenVersion was bumped to revoke), we get a single chance to
+// re-exchange our legacy userId for a fresh JWT and retry the request. The
+// senior never sees the failure.
+//
+// Single-flight: when N parallel requests all 401 at the same time (typical
+// app-foregrounding burst), only one exchange call goes out. The others
+// await the same promise and retry with whatever it produced.
+//
+// What this does NOT cover:
+//   - True sign-out-everywhere via tokenVersion bump: auto-re-exchange
+//     mints a new token carrying the bumped tv, so the user stays signed
+//     in. Real revocation needs an additional "exchange disabled" flag
+//     on the user row, which is out of scope for Stage B.
+//   - A leaked-but-still-valid JWT_SECRET on the server: client-side
+//     recovery only fires on 401, so a still-trusted leaked secret
+//     doesn't trigger anything. Fix is to rotate the secret server-side.
+
+let _pendingExchange: Promise<string | null> | null = null;
+
+/**
+ * Re-exchange the current legacy userId for a fresh JWT, with single-flight
+ * deduplication. Returns the new token string, or null if the exchange
+ * itself failed (network, user genuinely deleted, etc.).
+ *
+ * On success: also updates `_currentAuth.token` synchronously and
+ * fire-and-forgets the SecureStore write — same guarantees as the
+ * sliding-renewal path.
+ */
+async function refreshTokenSingleFlight(
+  userId: string
+): Promise<string | null> {
+  if (_pendingExchange) return _pendingExchange;
+  _pendingExchange = (async () => {
+    try {
+      const fresh = await exchangeAuthToken(userId);
+      _currentAuth = { userId, token: fresh };
+      void setAuthToken(fresh);
+      return fresh;
+    } catch {
+      // Exchange failed. Caller (authedFetch) returns the original 401.
+      // Common reasons: network down, API 5xx, user truly deleted.
+      return null;
+    } finally {
+      _pendingExchange = null;
+    }
+  })();
+  return _pendingExchange;
+}
+
+/**
+ * Apply any X-Renewed-Token header on a response. Shared between the
+ * initial request and the post-recovery retry — the retry's response can
+ * also carry a renewal (rare, but possible if the freshly-exchanged
+ * token immediately crosses the 50% mark, which only happens at the
+ * sub-second tail of a TTL).
+ */
+function applyRenewal(response: Response): void {
+  const renewed = response.headers.get("X-Renewed-Token");
+  if (renewed && _currentAuth) {
+    _currentAuth = { userId: _currentAuth.userId, token: renewed };
+    void setAuthToken(renewed);
+  }
+}
+
+/**
+ * fetch() wrapper that:
+ *   1. Injects the right auth header (Bearer preferred, X-User-Id fallback).
+ *   2. Watches the response for X-Renewed-Token and persists the new
+ *      token to SecureStore + module state so subsequent calls use it.
+ *   3. On 401, attempts a one-shot re-exchange + retry.
+ *
+ * Every authed call site goes through this. Unauthenticated calls
+ * (createUser, exchangeAuthToken) use raw fetch directly — they don't
+ * need the header injection, renewal handling, or recovery path. (The
+ * recovery path also can't recurse into itself: exchange uses raw fetch.)
+ */
+async function authedFetch(
+  input: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  const doRequest = async (): Promise<Response> => {
+    // Build headers fresh on every attempt — the post-recovery retry
+    // needs the NEW Bearer token that authHeaders() now returns.
+    const headers = new Headers(init.headers);
+    for (const [k, v] of Object.entries(authHeaders())) headers.set(k, v);
+    return fetch(input, { ...init, headers });
+  };
+
+  let response = await doRequest();
+  applyRenewal(response);
+
+  // 401 recovery: only attempt if we have a userId to exchange. Anonymous
+  // (signed-out) callers just see the 401.
+  if (response.status === 401 && _currentAuth?.userId) {
+    const fresh = await refreshTokenSingleFlight(_currentAuth.userId);
+    if (fresh) {
+      response = await doRequest();
+      applyRenewal(response);
+    }
+  }
+
+  return response;
 }
 
 // =============================================================================
@@ -54,13 +191,24 @@ export type AuthenticatedUser = {
   role: "senior" | "family" | "technician";
 };
 
+export type CreateUserResponse = {
+  user: AuthenticatedUser;
+  /** JWT minted at onboarding so the client never has to call /v1/auth/exchange. */
+  token: string;
+};
+
 /**
  * Create a brand-new user during onboarding. This is the ONE call that
- * doesn't need an X-User-Id header — that's whitelisted in the backend.
+ * doesn't need any auth header — it's whitelisted in the backend.
+ *
+ * Returns both the user blob and a freshly minted JWT. Older mobile
+ * builds (pre Stage B) ignore the `token` field and fall through to the
+ * legacy header path, which the API still accepts. Callers should
+ * persist BOTH via the auth context.
  */
 export async function createUser(input: {
   name: string;
-}): Promise<AuthenticatedUser> {
+}): Promise<CreateUserResponse> {
   const response = await fetch(`${API_URL}/v1/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -70,8 +218,35 @@ export async function createUser(input: {
     const body = await response.text().catch(() => "");
     throw new Error(`User create failed (${response.status}): ${body}`);
   }
-  const data = (await response.json()) as { user: AuthenticatedUser };
-  return data.user;
+  return (await response.json()) as CreateUserResponse;
+}
+
+/**
+ * Exchange a legacy userId for a JWT. Used once on app start by the
+ * AuthProvider when it detects "user blob exists, no token in
+ * SecureStore" — the migration path for builds upgrading from
+ * pre-Stage-B. Allowlisted from auth on the backend; rate-limited per IP.
+ *
+ * Throws on non-200. The caller (AuthProvider) catches and falls back
+ * to legacy-header behavior for the rest of the session.
+ */
+export async function exchangeAuthToken(userId: string): Promise<string> {
+  const response = await fetch(`${API_URL}/v1/auth/exchange`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, audience: "techbuddy-mobile" }),
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Auth exchange failed (${response.status}): ${body || "no body"}`
+    );
+  }
+  const data = (await response.json()) as { token: string };
+  if (!data.token || typeof data.token !== "string") {
+    throw new Error("Auth exchange returned no token");
+  }
+  return data.token;
 }
 
 /**
@@ -79,8 +254,8 @@ export async function createUser(input: {
  * deleted user (e.g. someone wiped the dev DB).
  */
 export async function getCurrentUser(): Promise<AuthenticatedUser> {
-  const response = await fetch(`${API_URL}/v1/users/me`, {
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+  const response = await authedFetch(`${API_URL}/v1/users/me`, {
+    headers: { "Content-Type": "application/json" },
   });
   if (!response.ok) {
     throw new Error(`Get user failed: ${response.status}`);
@@ -152,9 +327,9 @@ export async function sendChatMessage(params: {
   image?: ImageInput;
   language?: "en" | "fr" | "es";
 }): Promise<ChatResponse> {
-  const response = await fetch(`${API_URL}/v1/chat`, {
+  const response = await authedFetch(`${API_URL}/v1/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
 
@@ -211,9 +386,7 @@ export type SessionSummary = {
 };
 
 export async function listSessions(): Promise<SessionSummary[]> {
-  const response = await fetch(`${API_URL}/v1/sessions`, {
-    headers: authHeaders(),
-  });
+  const response = await authedFetch(`${API_URL}/v1/sessions`);
   if (!response.ok) {
     throw new Error(`Sessions list failed: ${response.status}`);
   }
@@ -250,9 +423,7 @@ export type UserContext = {
 };
 
 export async function listUserContext(): Promise<UserContext[]> {
-  const response = await fetch(`${API_URL}/v1/user/context`, {
-    headers: authHeaders(),
-  });
+  const response = await authedFetch(`${API_URL}/v1/user/context`);
   if (!response.ok) {
     throw new Error(`Context list failed: ${response.status}`);
   }
@@ -265,9 +436,9 @@ export async function createUserContext(input: {
   label: string;
   details: string;
 }): Promise<UserContext> {
-  const response = await fetch(`${API_URL}/v1/user/context`, {
+  const response = await authedFetch(`${API_URL}/v1/user/context`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
   if (!response.ok) {
@@ -278,9 +449,8 @@ export async function createUserContext(input: {
 }
 
 export async function deleteUserContext(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/v1/user/context/${id}`, {
+  const response = await authedFetch(`${API_URL}/v1/user/context/${id}`, {
     method: "DELETE",
-    headers: authHeaders(),
   });
   if (!response.ok && response.status !== 204) {
     throw new Error(`Context delete failed: ${response.status}`);
@@ -288,9 +458,7 @@ export async function deleteUserContext(id: string): Promise<void> {
 }
 
 export async function getSession(id: string): Promise<SessionDetail> {
-  const response = await fetch(`${API_URL}/v1/sessions/${id}`, {
-    headers: authHeaders(),
-  });
+  const response = await authedFetch(`${API_URL}/v1/sessions/${id}`);
   if (!response.ok) {
     throw new Error(`Session fetch failed: ${response.status}`);
   }
@@ -306,9 +474,9 @@ export async function updateSessionStatus(
   id: string,
   status: SessionStatus
 ): Promise<void> {
-  const response = await fetch(`${API_URL}/v1/sessions/${id}`, {
+  const response = await authedFetch(`${API_URL}/v1/sessions/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),
   });
   if (!response.ok) {
@@ -341,9 +509,9 @@ export type BugReportInput = {
 export async function submitBugReport(
   input: BugReportInput
 ): Promise<{ id: string }> {
-  const response = await fetch(`${API_URL}/v1/bug-reports`, {
+  const response = await authedFetch(`${API_URL}/v1/bug-reports`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
   if (!response.ok) {
@@ -384,9 +552,7 @@ export type SeniorFamilyLink = {
  * Used in mobile Settings to show + manage active links.
  */
 export async function listMyFamilyLinks(): Promise<SeniorFamilyLink[]> {
-  const response = await fetch(`${API_URL}/v1/family/links`, {
-    headers: authHeaders(),
-  });
+  const response = await authedFetch(`${API_URL}/v1/family/links`);
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     throw new Error(
@@ -402,12 +568,9 @@ export async function listMyFamilyLinks(): Promise<SeniorFamilyLink[]> {
  * row stays — they keep links to other seniors if they have any.
  */
 export async function revokeFamilyLink(linkId: string): Promise<void> {
-  const response = await fetch(
+  const response = await authedFetch(
     `${API_URL}/v1/family/links/${encodeURIComponent(linkId)}`,
-    {
-      method: "DELETE",
-      headers: authHeaders(),
-    }
+    { method: "DELETE" }
   );
   if (!response.ok && response.status !== 204) {
     const body = await response.text().catch(() => "");
@@ -428,9 +591,9 @@ export async function revokeFamilyLink(linkId: string): Promise<void> {
  * with every other authed POST in this file.
  */
 export async function createFamilyInvite(): Promise<FamilyInvite> {
-  const response = await fetch(`${API_URL}/v1/family/invites`, {
+  const response = await authedFetch(`${API_URL}/v1/family/invites`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
   if (!response.ok) {

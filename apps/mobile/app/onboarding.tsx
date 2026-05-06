@@ -24,7 +24,7 @@ type Step = "welcome" | "name";
 
 export default function OnboardingScreen() {
   const { t } = useT();
-  const { setUser } = useAuth();
+  const { setSession } = useAuth();
   const haptics = useHaptics();
 
   const [step, setStep] = useState<Step>("welcome");
@@ -38,10 +38,17 @@ export default function OnboardingScreen() {
     haptics.selection();
     setSubmitting(true);
     try {
-      const user = await createUser({ name: trimmed });
-      // Once setUser writes to AsyncStorage, AuthGate redirects to /
+      // /v1/users now returns { user, token }. The token is a freshly
+      // minted JWT scoped to the mobile audience — persisting it here
+      // means the very first authed call after onboarding (the
+      // chat/sessions hydration) goes via Bearer, not legacy header.
+      const { user, token } = await createUser({ name: trimmed });
+      // Once setSession writes to SecureStore, AuthGate redirects to /
       // automatically — no need for router.replace here.
-      setUser({ id: user.id, name: user.name });
+      setSession({
+        user: { id: user.id, name: user.name },
+        token,
+      });
     } catch (err) {
       console.error("[onboarding] createUser failed", safeErrorMessage(err));
       setSubmitting(false);

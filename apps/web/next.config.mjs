@@ -73,9 +73,10 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
 
-  experimental: {
-    typedRoutes: false,
-  },
+  // Promoted out of `experimental` in Next 15. We disable it because
+  // Expo router takes a different approach to typed routes; Next's
+  // version isn't useful here yet.
+  typedRoutes: false,
 
   async headers() {
     return [
@@ -123,4 +124,14 @@ export default withSentryConfig(nextConfig, {
 
   // Reduce upload size by stripping unused source map fragments.
   widenClientFileUpload: false,
+
+  // Source-map handling: generate them for upload to Sentry, then delete
+  // them from the build output so they aren't served publicly alongside
+  // the JS bundles. Anyone hitting `*.js.map` after deploy will 404 —
+  // Sentry still has the maps for symbolication on their side.
+  // (Sentry SDK plans to flip this default in a future major; we set
+  // it explicitly so the behavior is locked regardless of version.)
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
 });

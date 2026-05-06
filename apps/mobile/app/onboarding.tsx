@@ -18,6 +18,7 @@ import { createUser } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useHaptics } from "@/lib/haptics";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 type Step = "welcome" | "name";
 
@@ -42,7 +43,7 @@ export default function OnboardingScreen() {
       // automatically — no need for router.replace here.
       setUser({ id: user.id, name: user.name });
     } catch (err) {
-      console.error("[onboarding] createUser failed", err);
+      console.error("[onboarding] createUser failed", safeErrorMessage(err));
       setSubmitting(false);
       Alert.alert(t("onboarding_error_title"), t("onboarding_error_body"), [
         { text: t("onboarding_retry") },

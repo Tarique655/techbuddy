@@ -28,6 +28,7 @@ import {
   revokeFamilyLink,
   type SeniorFamilyLink,
 } from "@/lib/api";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -203,38 +204,49 @@ export default function SettingsScreen() {
 
         {/* Help (diagnostic) ----------------------------------------- */}
         {/*
-          Sends a Sentry event tagged with the user's id. Doubles as:
+          Sends a Sentry event tagged with a SHORT SUFFIX of the user's
+          id (last 6 chars). Doubles as:
           (1) a way for us to verify Sentry is wired up end-to-end, and
           (2) a real support feature — a senior (or family member) can
           tap this when the app feels off and we'll see context in Sentry.
+
+          Privacy: we deliberately do NOT log the full user id (which is
+          the bearer credential — see auth.ts), nor the user's display
+          name. The 6-char suffix is enough to disambiguate across a
+          beta-sized user base for cross-referencing with the DB without
+          exposing PII in Sentry.
         */}
-        <Section title="Help">
+        <Section title={t("settings_section_help")}>
           <Pressable
             onPress={() => {
               haptics.selection();
+              const userIdHint = user?.id ? user.id.slice(-6) : "anon";
               Sentry.captureException(
                 new Error(
-                  `TechBuddy mobile diagnostic — user ${user?.id ?? "unknown"} at ${new Date().toISOString()}`
+                  `TechBuddy mobile diagnostic — user *${userIdHint} at ${new Date().toISOString()}`
                 ),
                 {
-                  tags: { kind: "user-diagnostic", platform: "mobile" },
-                  extra: { userName: user?.name ?? null },
+                  tags: {
+                    kind: "user-diagnostic",
+                    platform: "mobile",
+                    user_hint: userIdHint,
+                  },
                 }
               );
               Alert.alert(
-                "Diagnostic sent",
-                "Thank you. Our team has been notified and will look into it.",
-                [{ text: "OK" }]
+                t("settings_diagnostic_sent_title"),
+                t("settings_diagnostic_sent_body"),
+                [{ text: t("alert_ok") }]
               );
             }}
             accessibilityRole="button"
-            accessibilityLabel="Send diagnostic to support"
+            accessibilityLabel={t("settings_send_diagnostic_a11y")}
             style={({ pressed }) => [
               styles.legalRow,
               pressed && styles.legalRowPressed,
             ]}
           >
-            <Text style={styles.legalLabel}>Send diagnostic to support</Text>
+            <Text style={styles.legalLabel}>{t("settings_send_diagnostic")}</Text>
             <Ionicons name="paper-plane-outline" size={18} color="#5A6173" />
           </Pressable>
         </Section>
@@ -390,7 +402,7 @@ function FamilyLinksList({ refetchKey }: { refetchKey: string }) {
     listMyFamilyLinks()
       .then((links) => setState({ kind: "ready", links }))
       .catch((err: unknown) => {
-        console.error("[settings] family links load failed", err);
+        console.error("[settings] family links load failed", safeErrorMessage(err));
         setState({ kind: "error" });
       });
   }, []);
@@ -426,7 +438,7 @@ function FamilyLinksList({ refetchKey }: { refetchKey: string }) {
               haptics.notificationSuccess();
               load();
             } catch (err) {
-              console.error("[settings] revoke failed", err);
+              console.error("[settings] revoke failed", safeErrorMessage(err));
               Alert.alert(
                 t("family_links_remove_error_title"),
                 t("family_links_remove_error_body"),

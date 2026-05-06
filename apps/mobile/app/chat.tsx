@@ -38,6 +38,7 @@ import { useHaptics } from "@/lib/haptics";
 import { useAuth } from "@/lib/auth";
 import { useVoiceInput } from "@/lib/use-voice-input";
 import { useBestSpeechVoice } from "@/lib/use-best-voice";
+import { safeErrorMessage } from "@/lib/safe-error";
 import { BugReportModal } from "@/components/bug-report-modal";
 
 type Bubble = ChatMessage & {
@@ -206,7 +207,7 @@ export default function ChatScreen() {
         if (session.device) setDevice(session.device);
       })
       .catch((err: unknown) => {
-        console.error("[chat] resume failed", err);
+        console.error("[chat] resume failed", safeErrorMessage(err));
         Alert.alert(
           t("alert_session_open_title"),
           t("alert_session_open_body"),
@@ -385,7 +386,7 @@ export default function ChatScreen() {
       if (!sessionId) setSessionId(result.sessionId);
       setMessages([...next, result.message]);
     } catch (err) {
-      console.error("[chat] send failed", err);
+      console.error("[chat] send failed", safeErrorMessage(err));
       Alert.alert(
         t("alert_buddy_trouble_title"),
         t("alert_buddy_trouble_body"),
@@ -466,7 +467,7 @@ export default function ChatScreen() {
               try {
                 await updateSessionStatus(sessionId, "resolved_ai");
               } catch (err) {
-                console.error("[chat] mark resolved failed", err);
+                console.error("[chat] mark resolved failed", safeErrorMessage(err));
               }
             }
             haptics.notificationSuccess();
@@ -507,7 +508,7 @@ export default function ChatScreen() {
         cameraType: ImagePicker.CameraType.back,
       });
     } catch (err) {
-      console.error("[chat] camera failed", err);
+      console.error("[chat] camera failed", safeErrorMessage(err));
       Alert.alert(t("alert_camera_open_title"), t("alert_camera_open_body"));
       return;
     }
@@ -539,7 +540,7 @@ export default function ChatScreen() {
         selectionLimit: 1,
       });
     } catch (err) {
-      console.error("[chat] gallery failed", err);
+      console.error("[chat] gallery failed", safeErrorMessage(err));
       Alert.alert(t("alert_gallery_open_title"), t("alert_camera_open_body"));
       return;
     }
@@ -579,7 +580,7 @@ export default function ChatScreen() {
         imageUri: resized.uri,
       });
     } catch (err) {
-      console.error("[chat] photo prep failed", err);
+      console.error("[chat] photo prep failed", safeErrorMessage(err));
       Alert.alert(t("alert_photo_send_title"), t("alert_photo_send_body"));
       setIsSending(false);
     }

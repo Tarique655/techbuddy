@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import * as Haptics from "expo-haptics";
+
+import { useHaptics } from "@/lib/haptics";
 
 type Variant = "hero" | "primary" | "secondary";
 
@@ -40,9 +41,12 @@ export function LargeButton({
 }: Props) {
   const isHero = variant === "hero";
   const isSecondary = variant === "secondary";
+  const haptics = useHaptics();
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Routed through useHaptics so the senior's haptics-off setting in
+    // Settings is honored. Direct expo-haptics calls would bypass it.
+    haptics.impactMedium();
     onPress();
   };
 

@@ -107,25 +107,10 @@ const STRINGS = {
     alert_voice_failed_body:
       "Something went wrong with the microphone. Please try again.",
 
-    // Settings ------------------------------------------------------------
-    settings: "Settings",
-    settings_a11y: "Open settings",
-    settings_section_language: "Language",
-    settings_lang_english: "English",
-    settings_lang_french: "Français",
-    settings_lang_spanish: "Español",
-    settings_section_text: "Text size",
-    settings_text_normal: "Normal",
-    settings_text_large: "Large",
-    settings_text_xlarge: "Extra large",
-    settings_text_preview:
-      "This is how text will look in your chats with Buddy.",
-    settings_section_audio: "Sound and speech",
-    settings_read_aloud: "Read aloud",
-    settings_read_aloud_desc:
-      "Buddy will speak its replies out loud in your language.",
-    settings_haptics: "Vibration on tap",
-    settings_haptics_desc: "Gentle buzz when you tap a button.",
+    // Legal --------------------------------------------------------------
+    // Other settings_* keys live further down (search "Settings -----").
+    // These four are the only ones with a single definition; the rest
+    // had been duplicated and we kept the second block as canonical.
     settings_section_legal: "Legal",
     settings_privacy_policy: "Privacy Policy",
     settings_terms_of_service: "Terms of Service",
@@ -333,6 +318,15 @@ const STRINGS = {
     invite_family_share_message:
       "Hi! I'm using TechBuddy. Here's a code to see how I'm doing: {code}. Go to {url} and type it in.",
 
+    // Help / diagnostic (Settings) -----------------------------------------
+    settings_section_help: "Help",
+    settings_send_diagnostic: "Send diagnostic to support",
+    settings_send_diagnostic_a11y:
+      "Send a diagnostic message to the people who built this app",
+    settings_diagnostic_sent_title: "Diagnostic sent",
+    settings_diagnostic_sent_body:
+      "Thank you. Our team has been notified and will look into it.",
+
     // Linked family members management (senior-side, in Settings) ----------
     family_links_title: "Family who can see your help",
     family_links_loading: "Loading…",
@@ -432,25 +426,10 @@ const STRINGS = {
     alert_voice_failed_body:
       "Une erreur est survenue avec le microphone. Veuillez réessayer.",
 
-    settings: "Paramètres",
-    settings_a11y: "Ouvrir les paramètres",
-    settings_section_language: "Langue",
-    settings_lang_english: "English",
-    settings_lang_french: "Français",
-    settings_lang_spanish: "Español",
-    settings_section_text: "Taille du texte",
-    settings_text_normal: "Normal",
-    settings_text_large: "Grand",
-    settings_text_xlarge: "Très grand",
-    settings_text_preview:
-      "Voici à quoi ressemblera le texte dans vos conversations avec Buddy.",
-    settings_section_audio: "Son et lecture",
-    settings_read_aloud: "Lecture à voix haute",
-    settings_read_aloud_desc:
-      "Buddy lira ses réponses à voix haute dans votre langue.",
-    settings_haptics: "Vibration au toucher",
-    settings_haptics_desc:
-      "Léger bourdonnement lorsque vous touchez un bouton.",
+    // Mentions légales — les autres clés `settings_*` se trouvent plus bas
+    // (rechercher "Settings -----"). Ces quatre-là étaient les seules à
+    // n'avoir qu'une seule définition; le reste avait été dupliqué et on
+    // garde le second bloc comme version canonique.
     settings_section_legal: "Mentions légales",
     settings_privacy_policy: "Politique de confidentialité",
     settings_terms_of_service: "Conditions d'utilisation",
@@ -645,6 +624,14 @@ const STRINGS = {
     invite_family_share: "Partager le code",
     invite_family_share_message:
       "Bonjour ! J'utilise TechBuddy. Voici un code pour voir comment je vais : {code}. Allez sur {url} et saisissez-le.",
+
+    settings_section_help: "Aide",
+    settings_send_diagnostic: "Envoyer un diagnostic à l'assistance",
+    settings_send_diagnostic_a11y:
+      "Envoyer un message de diagnostic aux personnes qui ont créé cette application",
+    settings_diagnostic_sent_title: "Diagnostic envoyé",
+    settings_diagnostic_sent_body:
+      "Merci. Notre équipe a été notifiée et va y jeter un œil.",
 
     family_links_title: "Famille qui voit votre aide",
     family_links_loading: "Chargement…",
@@ -946,6 +933,14 @@ const STRINGS = {
     invite_family_share: "Compartir código",
     invite_family_share_message:
       "¡Hola! Estoy usando TechBuddy. Aquí tiene un código para ver cómo me va: {code}. Vaya a {url} y escríbalo.",
+
+    settings_section_help: "Ayuda",
+    settings_send_diagnostic: "Enviar un diagnóstico al soporte",
+    settings_send_diagnostic_a11y:
+      "Enviar un mensaje de diagnóstico a las personas que crearon esta aplicación",
+    settings_diagnostic_sent_title: "Diagnóstico enviado",
+    settings_diagnostic_sent_body:
+      "Gracias. Nuestro equipo ha sido notificado y lo revisará.",
 
     family_links_title: "Familia que ve su ayuda",
     family_links_loading: "Cargando…",

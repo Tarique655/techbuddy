@@ -23,6 +23,7 @@ import { submitBugReport, type BugReportScreen, type ImageInput } from "@/lib/ap
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 type Props = {
   visible: boolean;
@@ -101,7 +102,7 @@ export function BugReportModal({ visible, onClose, screen, sessionId }: Props) {
         cameraType: ImagePicker.CameraType.back,
       });
     } catch (err) {
-      console.error("[bug-report] camera failed", err);
+      console.error("[bug-report] camera failed", safeErrorMessage(err));
       Alert.alert(t("alert_camera_open_title"), t("alert_camera_open_body"));
       return;
     }
@@ -123,7 +124,7 @@ export function BugReportModal({ visible, onClose, screen, sessionId }: Props) {
         selectionLimit: 1,
       });
     } catch (err) {
-      console.error("[bug-report] gallery failed", err);
+      console.error("[bug-report] gallery failed", safeErrorMessage(err));
       Alert.alert(t("alert_gallery_open_title"), t("alert_camera_open_body"));
       return;
     }
@@ -151,7 +152,7 @@ export function BugReportModal({ visible, onClose, screen, sessionId }: Props) {
         payload: { base64, mediaType: "image/jpeg" },
       });
     } catch (err) {
-      console.error("[bug-report] image prep failed", err);
+      console.error("[bug-report] image prep failed", safeErrorMessage(err));
       Alert.alert(t("alert_photo_send_title"), t("alert_photo_send_body"));
     }
   }
@@ -187,7 +188,7 @@ export function BugReportModal({ visible, onClose, screen, sessionId }: Props) {
         resetAndClose();
       }, 1800);
     } catch (err) {
-      console.error("[bug-report] submit failed", err);
+      console.error("[bug-report] submit failed", safeErrorMessage(err));
       Alert.alert(t("bug_report_error_title"), t("bug_report_error_body"), [
         { text: t("alert_ok") },
       ]);

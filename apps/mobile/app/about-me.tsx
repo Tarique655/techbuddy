@@ -25,6 +25,7 @@ import {
 } from "@/lib/api";
 import { useT, type StringKey } from "@/lib/i18n";
 import { useHaptics } from "@/lib/haptics";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 type SectionDef = {
   kind: UserContextKind;
@@ -71,7 +72,7 @@ export default function AboutMeScreen() {
       const fresh = await listUserContext();
       setItems(fresh);
     } catch (err) {
-      console.error("[about-me] list failed", err);
+      console.error("[about-me] list failed", safeErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +86,7 @@ export default function AboutMeScreen() {
           if (!cancelled) setItems(fresh);
         })
         .catch((err: unknown) => {
-          console.error("[about-me] list failed", err);
+          console.error("[about-me] list failed", safeErrorMessage(err));
         })
         .finally(() => {
           if (!cancelled) setIsLoading(false);
@@ -111,7 +112,7 @@ export default function AboutMeScreen() {
               await deleteUserContext(item.id);
               setItems((prev) => prev.filter((p) => p.id !== item.id));
             } catch (err) {
-              console.error("[about-me] delete failed", err);
+              console.error("[about-me] delete failed", safeErrorMessage(err));
             }
           },
         },
@@ -262,7 +263,7 @@ function AddItemSheet({
       });
       onSaved();
     } catch (err) {
-      console.error("[about-me] create failed", err);
+      console.error("[about-me] create failed", safeErrorMessage(err));
       setSaving(false);
     }
   }

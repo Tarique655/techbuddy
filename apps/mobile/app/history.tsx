@@ -18,6 +18,7 @@ import {
 } from "@/lib/api";
 import { useT, type Language, type StringKey } from "@/lib/i18n";
 import { useHaptics } from "@/lib/haptics";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 const DEVICE_LABEL_KEY: Record<DeviceKey, StringKey> = {
   computer: "card_computer",
@@ -91,7 +92,7 @@ export default function HistoryScreen() {
           if (!cancelled) setSessions(s);
         })
         .catch((err: unknown) => {
-          console.error("[history] sessions fetch failed", err);
+          console.error("[history] sessions fetch failed", safeErrorMessage(err));
           if (!cancelled) setLoadError(t("history_load_error"));
         })
         .finally(() => {

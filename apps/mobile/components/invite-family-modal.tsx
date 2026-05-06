@@ -14,6 +14,7 @@ import { createFamilyInvite, type FamilyInvite } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
+import { safeErrorMessage } from "@/lib/safe-error";
 
 type Props = {
   visible: boolean;
@@ -73,7 +74,7 @@ export function InviteFamilyModal({ visible, onClose }: Props) {
         setState({ status: "ready", invite });
       })
       .catch((err: unknown) => {
-        console.error("[invite-family] failed", err);
+        console.error("[invite-family] failed", safeErrorMessage(err));
         if (cancelled) return;
         setState({ status: "error" });
       });
@@ -97,7 +98,7 @@ export function InviteFamilyModal({ visible, onClose }: Props) {
     try {
       await Share.share({ message });
     } catch (err) {
-      console.error("[invite-family] share failed", err);
+      console.error("[invite-family] share failed", safeErrorMessage(err));
     }
   }
 
@@ -108,7 +109,7 @@ export function InviteFamilyModal({ visible, onClose }: Props) {
     createFamilyInvite()
       .then((invite) => setState({ status: "ready", invite }))
       .catch((err: unknown) => {
-        console.error("[invite-family] retry failed", err);
+        console.error("[invite-family] retry failed", safeErrorMessage(err));
         setState({ status: "error" });
       });
   }

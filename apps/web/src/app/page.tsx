@@ -18,20 +18,6 @@ import { formatApiError } from "@/lib/format-api-error";
  * id from a previous visit), we redirect straight to the dashboard.
  */
 export default function LandingPage() {
-  // TEMPORARY — source-map verification probe. Visit /?test=sentry to
-  // trigger a real React render-time throw from this file, then check
-  // the resulting Sentry issue's stack trace for properly-symbolicated
-  // frames pointing at apps/web/src/app/page.tsx. Remove this block in
-  // the next commit.
-  if (
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("test") === "sentry"
-  ) {
-    throw new Error(
-      `Sentry source-map probe from page.tsx — ${new Date().toISOString()}`
-    );
-  }
-
   const router = useRouter();
   const { user, setUser, ready } = useAuth();
 

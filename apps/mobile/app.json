@@ -13,7 +13,8 @@
       "bundleIdentifier": "com.tariq.techbuddy",
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "TechBuddy needs speech recognition so it can turn your spoken words into text for Buddy.",
-        "NSMicrophoneUsageDescription": "TechBuddy needs microphone access so you can speak to Buddy instead of typing."
+        "NSMicrophoneUsageDescription": "TechBuddy needs microphone access so you can speak to Buddy instead of typing.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -27,7 +28,6 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -61,14 +61,6 @@
         {
           "microphonePermission": "TechBuddy needs microphone access so you can speak to Buddy instead of typing.",
           "speechRecognitionPermission": "TechBuddy needs speech recognition so it can turn your spoken words into text for Buddy."
-        }
-      ],
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "techbuddy-mobile",
-          "organization": "teekaylabs"
         }
       ]
     ],

@@ -31,8 +31,15 @@ const DeviceKeySchema = z.enum([
 ]);
 
 const ImageInputSchema = z.object({
-  /** Base64-encoded image data, no data URL prefix. */
-  base64: z.string().min(1),
+  /**
+   * Base64-encoded image data, no data URL prefix. Capped at 7 MB of
+   * base64 (~5.25 MB of binary) — well above what we ship from the
+   * client (mobile resizes to 1600px on the long edge, JPEG q0.7,
+   * typically <500 KB) but well under the global 10 MB body limit. The
+   * cap defends against a malicious client trying to balloon Anthropic
+   * cost or DB storage by sending huge payloads.
+   */
+  base64: z.string().min(1).max(7_000_000),
   mediaType: z.enum(["image/jpeg", "image/png", "image/webp"]),
 });
 

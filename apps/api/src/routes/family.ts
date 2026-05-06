@@ -1,9 +1,11 @@
+import { randomInt } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { Prisma, UserRole } from "@prisma/client";
 
 import { db } from "../lib/db.js";
 import { serializeSummary } from "../lib/summarize.js";
+import { checkInviteAcceptRateLimit } from "../lib/rate-limit.js";
 
 /**
  * Family portal routes.
@@ -30,10 +32,11 @@ const INVITE_TTL_DAYS = 7;
 const INVITE_GENERATION_MAX_ATTEMPTS = 5;
 
 function generateInviteCode(): string {
-  // Math.random is fine here — codes are short-lived, single-use, and only
-  // grant a follow-up step (account creation). If we ever raise the privacy
-  // stakes (e.g. transcript access), upgrade to crypto.randomInt.
-  const n = Math.floor(Math.random() * 10 ** INVITE_CODE_LENGTH);
+  // crypto.randomInt is a CSPRNG-backed bounded random, no modulo bias.
+  // Math.random would be predictable enough that an attacker who saw a
+  // few historical codes could narrow the seed — overkill defense for a
+  // 7-day single-use code, but it's a one-line upgrade with no downside.
+  const n = randomInt(0, 10 ** INVITE_CODE_LENGTH);
   return n.toString().padStart(INVITE_CODE_LENGTH, "0");
 }
 
@@ -130,6 +133,23 @@ export async function familyRoutes(fastify: FastifyInstance) {
   // store it for future calls.
   // ---------------------------------------------------------------------------
   fastify.post("/v1/family/accept", async (request, reply) => {
+    // Rate-limit BEFORE Zod parse so a malformed-body brute-forcer pays
+    // the 429 cost on every attempt without us doing any real work.
+    const rl = checkInviteAcceptRateLimit(request.ip);
+    if (!rl.allowed) {
+      request.log.warn(
+        { ip: request.ip, reason: rl.reason, retryAfterSec: rl.retryAfterSec },
+        "invite-accept rate limit exceeded"
+      );
+      reply.header("Retry-After", String(rl.retryAfterSec));
+      return reply.code(429).send({
+        error: "rate_limit_exceeded",
+        message:
+          "Too many attempts. Please wait a moment before trying again.",
+        retryAfterSec: rl.retryAfterSec,
+      });
+    }
+
     const parse = AcceptSchema.safeParse(request.body);
     if (!parse.success) {
       return reply.code(400).send({

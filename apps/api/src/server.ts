@@ -33,6 +33,11 @@ const fastify = Fastify({
   // Raise to 10 MB so base64-encoded photos from the camera fit. A 1080p
   // JPEG at quality 0.6 typically encodes to ~300–600 KB; 10 MB is generous.
   bodyLimit: 10 * 1024 * 1024,
+  // We sit behind Render's proxy in production. trustProxy: true tells
+  // Fastify to read the client IP out of `X-Forwarded-For` so per-IP
+  // rate limits target real callers, not the Render proxy. Locally with
+  // no proxy in front, this is a no-op (no X-F-F header to trust).
+  trustProxy: true,
 });
 
 await fastify.register(cors, {

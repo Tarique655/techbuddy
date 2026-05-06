@@ -18,8 +18,14 @@ import { db } from "../lib/db.js";
  * row is the source of truth; Sentry is a notification channel.
  */
 const ImageInputSchema = z.object({
-  /** Base64-encoded image data, no data URL prefix. */
-  base64: z.string().min(1),
+  /**
+   * Base64-encoded image data, no data URL prefix. Capped at 7 MB of
+   * base64 (~5.25 MB of binary). The mobile client resizes to 1600px on
+   * the long edge before encoding so real submissions are <500 KB; the
+   * cap defends against a malicious client ballooning the bug_reports
+   * table (we store the image inline in v1).
+   */
+  base64: z.string().min(1).max(7_000_000),
   mediaType: z.enum(["image/jpeg", "image/png", "image/webp"]),
 });
 

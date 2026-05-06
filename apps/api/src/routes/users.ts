@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { db } from "../lib/db.js";
+import { checkUserCreateRateLimit } from "../lib/rate-limit.js";
 
 const CreateUserSchema = z.object({
   /** Senior-friendly display name. Used in greetings and Buddy's prompt. */
@@ -15,6 +16,26 @@ export async function userRoutes(fastify: FastifyInstance) {
   // an id in the first place.
   // ---------------------------------------------------------------------------
   fastify.post("/v1/users", async (request, reply) => {
+    // Rate-limit BEFORE Zod parse so a script spamming this endpoint
+    // pays the 429 cost without us doing schema work or DB writes.
+    // Onboarding is a once-per-device action; 5/minute, 20/hour from a
+    // single IP is generous for legit households on a shared NAT and
+    // tight enough to neutralize spam.
+    const rl = checkUserCreateRateLimit(request.ip);
+    if (!rl.allowed) {
+      request.log.warn(
+        { ip: request.ip, reason: rl.reason, retryAfterSec: rl.retryAfterSec },
+        "user-create rate limit exceeded"
+      );
+      reply.header("Retry-After", String(rl.retryAfterSec));
+      return reply.code(429).send({
+        error: "rate_limit_exceeded",
+        message:
+          "Too many account creations from this network. Please wait a moment and try again.",
+        retryAfterSec: rl.retryAfterSec,
+      });
+    }
+
     const parse = CreateUserSchema.safeParse(request.body);
     if (!parse.success) {
       return reply.code(400).send({

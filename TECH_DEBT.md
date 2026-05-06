@@ -26,16 +26,33 @@ Last reviewed: 2026-05-04
 
 **Where:** `apps/mobile/eas.json` — `SENTRY_DISABLE_AUTO_UPLOAD=true` in all three build profiles.
 
-**Why:** `@sentry/cli`'s postinstall step fails on EAS Linux runners. The CLI binary either doesn't get downloaded or doesn't have the right permissions. We tried adding `pnpm.onlyBuiltDependencies` to the root `package.json` to force the postinstall to run; that fixed it locally on Windows but the Linux variant of `@sentry/cli` (`@sentry/cli-linux-x64`) still wasn't being installed on EAS. Suspected root cause: `pnpm-lock.yaml` only locks the platform variants present at the machine that generated the lockfile (Windows in our case).
+**Why:** `@sentry/cli`'s execution fails on EAS Linux runners. The error in the build log is:
+
+```
+Execution failed for task ':app:createBundleReleaseJsAndAssets_SentryUpload_*'.
+> A problem occurred starting process 'command '.../node_modules/@sentry/cli/bin/sentry-cli''
+```
+
+We've tried two fix paths and both failed:
+
+1. **Regenerated `pnpm-lock.yaml` on Linux** (via GitHub Codespaces, 2026-05-05) so the Linux `@sentry/cli-*` optional deps are properly locked. Lockfile now contains `@sentry/cli-linux-x64@3.4.1` and friends — verified via `Select-String`. Build still failed identically.
+2. **Added platform-specific Sentry CLI packages to `pnpm.onlyBuiltDependencies`** in root `package.json` (`@sentry/cli-linux-x64`, `@sentry/cli-linux-arm64`, etc.) so their install scripts run. Build still failed identically.
+
+The binary apparently exists at the expected path but Gradle can't start the process. Without log access to the EAS build environment we can't tell whether it's a permissions issue, a missing libc dependency, or something else in the @sentry/cli wrapper.
 
 **Impact:** Crashes still report to Sentry — the runtime SDK is independent of the CLI. But stack traces in the Sentry UI will be minified (e.g. `a.b.c` instead of `handleSubmit`), so debugging production crashes is harder.
 
 **Fix path (when we have time):**
-- **Option A (preferred):** Generate `pnpm-lock.yaml` on Linux to include the Linux `@sentry/cli` variant. Easiest way: run `pnpm install` inside WSL or in a CI container, commit the resulting lockfile.
-- **Option B:** Manual source-map upload after each build via `npx sentry-expo-upload-sourcemaps` once the build artifact is downloaded.
-- **Option C:** Lock `@sentry/cli` to a specific version known to work, or pre-download the Linux binary into the repo.
+- **Option A:** Manual source-map upload from Windows after each build. The local Windows `@sentry/cli` works fine (`pnpm exec sentry-cli sourcemaps upload ...`). Wire into a post-build script. Reliable but adds a manual step.
+- **Option B:** Bump `@sentry/react-native` and `@sentry/cli` to the latest versions on the next Expo SDK bump. Maybe a newer release fixes whatever's wrong with the CLI dispatch on Linux.
+- **Option C:** Switch the EAS build image to one that pre-installs sentry-cli system-wide, bypassing the npm-shipped binary entirely.
+- **Option D:** Open an issue against `@sentry/react-native` with the exact error and our package.json + lockfile excerpt; may be a known issue with a workaround we haven't found.
 
-**Acceptance:** Remove the env var from all three profiles in `eas.json` and confirm the build completes with the `:app:createBundleReleaseJsAndAssets_SentryUpload_*` task running (not SKIPPED).
+**Acceptance:** Remove the env var from all three profiles in `eas.json`, push, run a fresh `eas build`, confirm the `:app:createBundleReleaseJsAndAssets_SentryUpload_*` task completes successfully (not failing on "A problem occurred starting process").
+
+**Things we already tried that did NOT work** — don't re-attempt:
+- Regenerating lockfile on Linux ✗
+- Adding `@sentry/cli-linux-*` to `pnpm.onlyBuiltDependencies` ✗
 
 ---
 

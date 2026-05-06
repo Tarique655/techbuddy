@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 
 // API origin the family portal calls. Set per-environment in Vercel —
@@ -86,4 +88,39 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap the config with Sentry's plugin. Behavior:
+//   - Adds source map upload to Sentry at build time (if SENTRY_AUTH_TOKEN
+//     is set in the build environment — we set it in Vercel; locally it's
+//     skipped and the build still succeeds).
+//   - Tunnels Sentry events through /monitoring to dodge ad-blockers
+//     (those would otherwise block requests to *.ingest.sentry.io).
+//   - Hides Sentry CLI noise from the build log unless we're in CI.
+//
+// Org and project are hardcoded — they're not secrets and they identify
+// where errors land. If we ever spin up a separate dev/staging Sentry
+// project, swap to env vars.
+export default withSentryConfig(nextConfig, {
+  org: "teekaylabs",
+  project: "techbuddy-web",
+
+  // Quiet during local builds, verbose in CI for debugging upload issues.
+  silent: !process.env.CI,
+
+  // Route Sentry's beacon through our own origin instead of
+  // *.ingest.sentry.io — uBlock Origin and similar block the ingest
+  // domain by default.
+  tunnelRoute: "/monitoring",
+
+  // Don't fail the Vercel build if source map upload errors out.
+  // We've been bitten by Sentry CLI fragility before (see
+  // TECH_DEBT.md); errors still get captured, just without
+  // un-minified stacks.
+  errorHandler: (err, _invokeErr, compilation) => {
+    compilation.warnings.push(
+      `Sentry source map upload failed: ${err.message ?? err}`
+    );
+  },
+
+  // Reduce upload size by stripping unused source map fragments.
+  widenClientFileUpload: false,
+});

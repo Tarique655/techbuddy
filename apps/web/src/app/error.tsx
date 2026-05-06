@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * App-level error boundary for the family portal. Triggered when a
@@ -9,8 +10,8 @@ import { useEffect } from "react";
  * button (Next provides `reset`).
  *
  * Deliberately NOT showing the raw error message to the user — could
- * leak API URLs or stack frames. Logged to console for now; when
- * Sentry is wired up on the web side, captureException(error) here.
+ * leak API URLs or stack frames. The error goes to Sentry (along with
+ * Next's `digest` correlation id) so we can debug from the dashboard.
  */
 type Props = {
   error: Error & { digest?: string };
@@ -19,8 +20,13 @@ type Props = {
 
 export default function Error({ error, reset }: Props) {
   useEffect(() => {
-    // TODO: when @sentry/nextjs is added, replace with Sentry.captureException(error).
-    console.error("[web/error-boundary]", error.message, error.digest);
+    Sentry.captureException(error, {
+      tags: { boundary: "app-root", surface: "family-portal" },
+      // The digest is a Next-generated id we can grep for in server
+      // logs to correlate with the same render that produced this
+      // client-side error fallback.
+      extra: error.digest ? { nextDigest: error.digest } : undefined,
+    });
   }, [error]);
 
   return (

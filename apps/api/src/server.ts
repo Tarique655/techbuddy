@@ -9,11 +9,13 @@
 // already loaded — and Sentry's patches missed their window. Hence the
 // `[Sentry] fastify is not instrumented` warning we used to get.
 import Fastify from "fastify";
+import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import * as Sentry from "@sentry/node";
 
 import { env } from "./lib/env.js";
 import { registerAuth } from "./lib/auth.js";
+import { authRoutes } from "./routes/auth.js";
 import { bugReportRoutes } from "./routes/bug-reports.js";
 import { chatRoutes } from "./routes/chat.js";
 import { debugRoutes } from "./routes/debug.js";
@@ -40,6 +42,14 @@ const fastify = Fastify({
   trustProxy: true,
 });
 
+// Cookie plugin must register before routes so reply.setCookie /
+// request.cookies are available everywhere. The `tb_session` cookie
+// (set by /v1/family/accept and the renewal hook) is HttpOnly + Secure
+// in prod, so we don't strictly need a `secret` for signing here — the
+// cookie's *contents* are an HS256-signed JWT, so an unsigned cookie
+// envelope is fine.
+await fastify.register(cookie);
+
 await fastify.register(cors, {
   // In dev, allow Expo Go and the family web portal. In prod we'll lock this down.
   origin: (origin, cb) => {
@@ -49,8 +59,18 @@ await fastify.register(cors, {
     if (env.NODE_ENV === "development") return cb(null, true);
     cb(new Error("Not allowed by CORS"), false);
   },
-  // X-User-Id is a custom header, so preflight needs to allow it explicitly.
-  allowedHeaders: ["Content-Type", "X-User-Id"],
+  // X-User-Id is the legacy header (Stage A multi-mode). Authorization
+  // is the JWT path. Both kept until Stage E removes the legacy column.
+  allowedHeaders: ["Content-Type", "X-User-Id", "Authorization"],
+  // exposedHeaders: the mobile fetch wrapper reads X-Renewed-Token to
+  // catch sliding renewals. Browsers won't expose it to JS unless we
+  // list it explicitly.
+  exposedHeaders: ["X-Renewed-Token"],
+  // Allow cookies to flow on cross-origin requests. Today the web side
+  // goes through Next route handlers (Path A), so the API doesn't see
+  // cross-origin cookied requests in practice — but flipping this on
+  // is harmless and future-proofs any direct client → API calls.
+  credentials: true,
 });
 
 // Sentry's Fastify integration. Captures unhandled errors in route
@@ -59,8 +79,9 @@ await fastify.register(cors, {
 Sentry.setupFastifyErrorHandler(fastify);
 
 // Auth hook MUST register before the route registrations below, so its
-// pre-handler covers them. Allowlisted paths (/healthz, POST /v1/users)
-// are handled inside lib/auth.ts.
+// pre-handler covers them. Allowlisted paths (/healthz, POST /v1/users,
+// POST /v1/family/accept, POST /v1/auth/exchange) are handled inside
+// lib/auth.ts.
 await registerAuth(fastify);
 
 fastify.get("/healthz", async () => ({
@@ -69,6 +90,7 @@ fastify.get("/healthz", async () => ({
   env: env.NODE_ENV,
 }));
 
+await fastify.register(authRoutes);
 await fastify.register(userRoutes);
 await fastify.register(chatRoutes);
 await fastify.register(sessionsRoutes);

@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { db } from "../lib/db.js";
+import { signAuthToken, type AuthRole } from "../lib/jwt.js";
 import { checkUserCreateRateLimit } from "../lib/rate-limit.js";
 
 const CreateUserSchema = z.object({
@@ -49,12 +50,23 @@ export async function userRoutes(fastify: FastifyInstance) {
     });
     request.log.info({ userId: created.id }, "created user");
 
+    // Mint a JWT for the new user so the mobile client doesn't need a
+    // second round-trip to /v1/auth/exchange after onboarding. This
+    // endpoint is mobile-only in practice (web doesn't create senior
+    // accounts), so audience is mobile. Older mobile builds that don't
+    // know to look for the `token` field just ignore it; the addition
+    // doesn't break the previous `{ user }` contract.
+    const role = created.role.toLowerCase() as AuthRole;
+    const token = signAuthToken({
+      userId: created.id,
+      role,
+      tokenVersion: created.tokenVersion,
+      audience: "techbuddy-mobile",
+    });
+
     return reply.code(201).send({
-      user: {
-        id: created.id,
-        name: created.name,
-        role: created.role.toLowerCase(),
-      },
+      user: { id: created.id, name: created.name, role },
+      token,
     });
   });
 

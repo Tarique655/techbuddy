@@ -4,8 +4,24 @@ import { z } from "zod";
 import { Prisma, UserRole } from "@prisma/client";
 
 import { db } from "../lib/db.js";
+import { env } from "../lib/env.js";
+import { signAuthToken, type AuthRole } from "../lib/jwt.js";
 import { serializeSummary } from "../lib/summarize.js";
 import { checkInviteAcceptRateLimit } from "../lib/rate-limit.js";
+
+/**
+ * Decide whether to set the `tb_session` cookie on a /v1/family/accept
+ * response. Set when the request originates from a configured web origin
+ * (the family portal); skip for mobile-style callers (no Origin header).
+ *
+ * The mobile app could in theory hit /v1/family/accept too — there's no
+ * mobile UI for it today, but if there ever is, the absence of an
+ * Origin header makes it a JSON-token-only response.
+ */
+function shouldSetWebCookie(origin: string | undefined): boolean {
+  if (!origin) return false;
+  return env.CORS_ORIGINS.includes(origin);
+}
 
 /**
  * Family portal routes.
@@ -191,7 +207,7 @@ export async function familyRoutes(fastify: FastifyInstance) {
     const result = await db.$transaction(async (tx) => {
       const family = await tx.user.create({
         data: { name, role: UserRole.FAMILY },
-        select: { id: true, name: true, role: true },
+        select: { id: true, name: true, role: true, tokenVersion: true },
       });
       const link = await tx.familyLink.create({
         data: {
@@ -217,13 +233,34 @@ export async function familyRoutes(fastify: FastifyInstance) {
       "family invite accepted"
     );
 
+    // Mint a JWT scoped to the right surface. If the request came from
+    // a configured web origin, also set the `tb_session` HttpOnly cookie
+    // on this response — the family portal is the canonical caller.
+    // Mobile-style callers (no Origin) get the token in JSON only.
+    const role = result.family.role.toLowerCase() as AuthRole;
+    const fromWeb = shouldSetWebCookie(request.headers.origin);
+    const audience = fromWeb ? "techbuddy-web" : "techbuddy-mobile";
+    const token = signAuthToken({
+      userId: result.family.id,
+      role,
+      tokenVersion: result.family.tokenVersion,
+      audience,
+    });
+
+    if (fromWeb) {
+      reply.setCookie("tb_session", token, {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60, // matches the web TTL in lib/jwt.ts
+      });
+    }
+
     return reply.code(201).send({
-      user: {
-        id: result.family.id,
-        name: result.family.name,
-        role: result.family.role.toLowerCase(),
-      },
+      user: { id: result.family.id, name: result.family.name, role },
       link: { id: result.link.id, seniorUserId: invite.createdByUserId },
+      token,
     });
   });
 

@@ -45,6 +45,14 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  /// Bumped to invalidate every JWT this user is currently holding —
+  /// e.g. for sign-out-everywhere, suspicious-activity revocation, or
+  /// any breach response. Stored as an int and embedded in the JWT as
+  /// the `tv` claim; the auth pre-handler rejects tokens whose `tv`
+  /// doesn't match this column. Defaults to 0 on existing rows so the
+  /// schema migration is back-compat with the legacy X-User-Id path.
+  tokenVersion Int @default(0) @map("token_version")
+
   sessions   Session[]
   contexts   UserContext[]
   bugReports BugReport[]

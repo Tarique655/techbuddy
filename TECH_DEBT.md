@@ -2,7 +2,10 @@
 
 This file tracks shortcuts, deprecations, and follow-ups so they don't get forgotten. When you take a shortcut to ship, add it here. When you fix one, delete the entry.
 
-Last reviewed: 2026-05-04
+Last reviewed: 2026-05-06
+
+---
+
 
 ---
 

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "//": [
+    "Vercel respects this file automatically (unlike Render's blueprint).",
+    "Project Root Directory must still be set to apps/web in the Vercel dashboard.",
+    "Env var NEXT_PUBLIC_API_URL is set per-environment in the dashboard;",
+    "we don't commit it here so dev/preview/prod can point at different APIs."
+  ],
+
+  "framework": "nextjs",
+
+  "installCommand": "pnpm install --frozen-lockfile"
+}

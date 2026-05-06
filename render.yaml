@@ -1,0 +1,67 @@
+# Render Blueprint — describes the techbuddy-api web service.
+#
+# Status (as of commit time): this file documents the current Render
+# configuration. The active service was created via the Render dashboard
+# and remains the source of truth there. To make this YAML authoritative:
+#
+#   1. In Render dashboard: New → Blueprint → connect this repo
+#   2. Render will create a new service from this YAML
+#   3. Manually delete the old (dashboard-created) techbuddy-api service
+#   4. Update DNS / EAS / mobile EXPO_PUBLIC_API_URL if the new service
+#      gets a different .onrender.com URL
+#
+# Until that migration happens, this file is PR-visible documentation:
+# any change to build/start commands, health check, or scaling lands as
+# a reviewable diff instead of a silent dashboard edit.
+#
+# Spec: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: techbuddy-api
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /healthz
+
+    # Build runs on Linux. We install pnpm globally first because
+    # corepack doesn't work on Render's read-only /usr/bin (see
+    # TECH_DEBT.md, "Render gotchas seen during setup").
+    buildCommand: |
+      npm install -g pnpm@10 &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @techbuddy/api build
+
+    # Start runs `prisma migrate deploy` first so production schema
+    # changes are applied before the server boots. See TECH_DEBT.md
+    # item 1 for the known fragility against Neon cold starts and the
+    # Pre-Deploy Command fix path.
+    startCommand: pnpm --filter @techbuddy/api start
+
+    # Env vars are managed in the Render dashboard for security.
+    # Listed here with `sync: false` so the schema is documented
+    # without committing secrets. To populate fresh, copy these from
+    # the dashboard or use `render env` CLI.
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: RATE_LIMIT_PER_MINUTE
+        sync: false
+      - key: RATE_LIMIT_PER_HOUR
+        sync: false

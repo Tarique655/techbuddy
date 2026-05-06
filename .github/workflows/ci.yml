@@ -1,0 +1,74 @@
+name: CI
+
+# Runs on every PR and push to main, plus manual triggers via the
+# Actions tab. Render and Vercel auto-deploy from `main`; this gate
+# catches typecheck/build regressions BEFORE a deploy goes out.
+#
+# What's checked:
+#   - typecheck across every workspace (cheap, catches most regressions)
+#   - api build (prisma generate + tsc) — same as Render's build step
+#   - web build (next build) — same as Vercel's build step
+#
+# What's deliberately NOT checked yet:
+#   - Lint: `pnpm -r lint` would call apps/api/lint which is currently
+#     "echo skipped". Until we set up real ESLint for the API package
+#     (TECH_DEBT.md follow-up), running it adds zero signal.
+#   - Mobile build: EAS handles this in the cloud, takes ~10 min, would
+#     more than double our CI time for redundant coverage.
+#   - Tests: there aren't any yet. Add a `pnpm -r test` step here when
+#     the test suite lands.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel in-flight runs for the same ref so a rapid sequence of pushes
+# only finishes the most recent one. Saves Actions minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint, typecheck, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Install pnpm BEFORE setup-node so the cache key resolves to a
+      # pnpm store. setup-node's `cache: 'pnpm'` needs pnpm on PATH.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Pinned to the same version Render and EAS use so CI catches
+          # version-specific bugs before they hit a real builder.
+          node-version: '22.11.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (all workspaces)
+        run: pnpm -r typecheck
+
+      - name: Build API
+        run: pnpm --filter @techbuddy/api build
+
+      - name: Build web (family portal)
+        # NEXT_PUBLIC_API_URL is referenced via process.env in the web
+        # client. The default fallback is http://localhost:4000, which
+        # would bake into the CI build's bundle if we left it unset.
+        # Pointing at production matches what Vercel ships.
+        env:
+          NEXT_PUBLIC_API_URL: https://techbuddy-api.onrender.com
+        run: pnpm --filter @techbuddy/web build

@@ -22,6 +22,7 @@ import * as Speech from "expo-speech";
 import { Ionicons } from "@expo/vector-icons";
 
 import {
+  BuddyBusyError,
   getSession,
   sendChatMessage,
   updateSessionStatus,
@@ -415,11 +416,23 @@ export default function ChatScreen() {
       setMessages([...next, result.message]);
     } catch (err) {
       console.error("[chat] send failed", safeErrorMessage(err));
-      Alert.alert(
-        t("alert_buddy_trouble_title"),
-        t("alert_buddy_trouble_body"),
-        [{ text: t("alert_ok") }]
-      );
+      // Distinguish "Anthropic is overloaded — wait a few seconds and try
+      // again" from "something is genuinely broken." Both produce the
+      // same network-level fetch failure path on older builds; the new
+      // BuddyBusyError lets us show calmer, more accurate copy.
+      if (err instanceof BuddyBusyError) {
+        Alert.alert(
+          t("alert_buddy_busy_title"),
+          t("alert_buddy_busy_body"),
+          [{ text: t("alert_ok") }]
+        );
+      } else {
+        Alert.alert(
+          t("alert_buddy_trouble_title"),
+          t("alert_buddy_trouble_body"),
+          [{ text: t("alert_ok") }]
+        );
+      }
       // Roll back the user message we optimistically added so they can retry.
       setMessages(messages);
       setInput(trimmed);

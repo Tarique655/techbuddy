@@ -1,7 +1,33 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "./env.js";
 
-export const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+// SDK's default is 2 retries; bump to 4 because we've seen Anthropic 529
+// "Overloaded" responses persist for several seconds during peak load.
+// The SDK already does exponential backoff between retries (~0.5s, 1s,
+// 2s, 4s), so 4 retries spans ~7.5 seconds before final failure — long
+// enough to ride through most transient overload bursts without the
+// senior seeing an error alert.
+export const anthropic = new Anthropic({
+  apiKey: env.ANTHROPIC_API_KEY,
+  maxRetries: 4,
+});
+
+/**
+ * Classify an Anthropic SDK error so the chat handler can return a
+ * different HTTP status / code for "service is busy, retry later"
+ * vs "something is genuinely broken". The mobile client uses these
+ * to show distinct user-facing alerts.
+ *
+ * Anthropic returns 529 when their inference fleet is overloaded.
+ * It's transient and the SDK already retries it; if we still see one
+ * after the configured retries, the user can usefully try again in
+ * a few seconds.
+ */
+export function isAnthropicOverloadedError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const status = (err as { status?: unknown }).status;
+  return typeof status === "number" && status === 529;
+}
 
 /**
  * Buddy's persona. The single most important string in TechBuddy —

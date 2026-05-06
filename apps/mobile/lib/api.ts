@@ -121,6 +121,29 @@ type ChatResponse = {
  *
  * `language` controls which language Buddy responds in.
  */
+/**
+ * Custom error thrown when Anthropic is too busy to handle the request
+ * (HTTP 503 + `error: "upstream_overloaded"` from our API). The chat
+ * screen catches this specifically to show "Buddy is very busy, try
+ * again in a moment" instead of the generic "Buddy is having trouble"
+ * alert — different recovery path, different user expectation.
+ *
+ * Usage:
+ *   try { await sendChatMessage(...) }
+ *   catch (err) {
+ *     if (err instanceof BuddyBusyError) { ...show busy alert... }
+ *     else { ...show generic trouble alert... }
+ *   }
+ */
+export class BuddyBusyError extends Error {
+  readonly retryAfterSec: number;
+  constructor(message: string, retryAfterSec: number) {
+    super(message);
+    this.name = "BuddyBusyError";
+    this.retryAfterSec = retryAfterSec;
+  }
+}
+
 export async function sendChatMessage(params: {
   messages: ChatMessage[];
   seniorName?: string;
@@ -137,6 +160,34 @@ export async function sendChatMessage(params: {
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
+
+    // 503 + upstream_overloaded means Anthropic returned 529 even after
+    // the SDK's automatic retries — tell the caller to surface the
+    // distinct "busy" UX instead of the generic "trouble" alert.
+    if (response.status === 503) {
+      let retryAfter = 5;
+      try {
+        const parsed = JSON.parse(body) as {
+          error?: string;
+          retryable?: boolean;
+        };
+        if (parsed?.error === "upstream_overloaded") {
+          const header = response.headers.get("Retry-After");
+          if (header) {
+            const n = Number.parseInt(header, 10);
+            if (Number.isFinite(n) && n > 0) retryAfter = n;
+          }
+          throw new BuddyBusyError(
+            `Chat upstream overloaded — retry in ${retryAfter}s`,
+            retryAfter
+          );
+        }
+      } catch (parseOrThrow) {
+        if (parseOrThrow instanceof BuddyBusyError) throw parseOrThrow;
+        // JSON parse failed — fall through to the generic error below.
+      }
+    }
+
     throw new Error(
       `Chat request failed (${response.status}): ${body || "no body"}`
     );

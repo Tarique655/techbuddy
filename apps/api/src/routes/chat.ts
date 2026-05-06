@@ -3,7 +3,12 @@ import { z } from "zod";
 import { Device, MessageRole, Prisma } from "@prisma/client";
 import * as Sentry from "@sentry/node";
 
-import { anthropic, BUDDY_MODEL_CONFIG, deviceContextLine } from "../lib/buddy.js";
+import {
+  anthropic,
+  BUDDY_MODEL_CONFIG,
+  deviceContextLine,
+  isAnthropicOverloadedError,
+} from "../lib/buddy.js";
 import { db } from "../lib/db.js";
 import { checkChatRateLimit } from "../lib/rate-limit.js";
 import { summarizeAndSave } from "../lib/summarize.js";
@@ -299,11 +304,36 @@ export async function chatRoutes(fastify: FastifyInstance) {
       // We've already persisted the user message above. Don't roll it back —
       // it really happened from the senior's perspective. The client will
       // retry, and the next attempt will append a new assistant turn.
-      request.log.error({ err, sessionId: session.id }, "anthropic call failed");
+      const overloaded = isAnthropicOverloadedError(err);
+      request.log.error(
+        { err, sessionId: session.id, overloaded },
+        "anthropic call failed"
+      );
       Sentry.captureException(err, {
-        tags: { route: "chat", upstream: "anthropic" },
+        tags: {
+          route: "chat",
+          upstream: "anthropic",
+          // Tag overload separately so we can dashboard 529 frequency
+          // without it drowning in genuine errors.
+          status: overloaded ? "529_overloaded" : "other",
+        },
         extra: { sessionId: session.id, userId },
       });
+      if (overloaded) {
+        // 503 + retryable code so the mobile client can show a "Buddy
+        // is busy, try again in a moment" message instead of the
+        // generic "something is broken" alert. Anthropic's load
+        // typically recovers within seconds; surfacing it as transient
+        // sets the right user expectation.
+        reply.header("Retry-After", "5");
+        return reply.code(503).send({
+          error: "upstream_overloaded",
+          message:
+            "Buddy is very busy right now. Please try again in a moment.",
+          sessionId: session.id,
+          retryable: true,
+        });
+      }
       return reply.code(502).send({
         error: "upstream_error",
         message: "Buddy is having trouble right now. Please try again.",

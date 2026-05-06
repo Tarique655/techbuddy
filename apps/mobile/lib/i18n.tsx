@@ -262,6 +262,9 @@ const STRINGS = {
     // Alerts ---------------------------------------------------------------
     alert_buddy_trouble_title: "Buddy is having trouble",
     alert_buddy_trouble_body: "Please try again in a moment.",
+    alert_buddy_busy_title: "Buddy is busy right now",
+    alert_buddy_busy_body:
+      "Lots of people are using Buddy at the same time. Please try again in a few seconds.",
     alert_ok: "OK",
     alert_session_open_title: "Couldn't open that session",
     alert_session_open_body:
@@ -570,6 +573,9 @@ const STRINGS = {
 
     alert_buddy_trouble_title: "Buddy a un problème",
     alert_buddy_trouble_body: "Veuillez réessayer dans un instant.",
+    alert_buddy_busy_title: "Buddy est très sollicité en ce moment",
+    alert_buddy_busy_body:
+      "Beaucoup de personnes utilisent Buddy en même temps. Veuillez réessayer dans quelques secondes.",
     alert_ok: "D'accord",
     alert_session_open_title: "Impossible d'ouvrir cette session",
     alert_session_open_body:
@@ -879,7 +885,10 @@ const STRINGS = {
 
     alert_buddy_trouble_title: "Buddy tiene un problema",
     alert_buddy_trouble_body: "Por favor, inténtelo de nuevo en un momento.",
-    alert_ok: "De acuerdo",
+    alert_buddy_busy_title: "Buddy está muy ocupado ahora mismo",
+    alert_buddy_busy_body:
+      "Mucha gente está usando Buddy al mismo tiempo. Por favor, inténtelo de nuevo en unos segundos.",
+    alert_ok: "Aceptar",
     alert_session_open_title: "No se pudo abrir esa sesión",
     alert_session_open_body:
       "Algo salió mal. Inténtelo de nuevo desde la pantalla de inicio.",

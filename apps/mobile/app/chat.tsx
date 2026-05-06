@@ -37,6 +37,7 @@ import { useSettings } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
 import { useAuth } from "@/lib/auth";
 import { useVoiceInput } from "@/lib/use-voice-input";
+import { useBestSpeechVoice } from "@/lib/use-best-voice";
 import { BugReportModal } from "@/components/bug-report-modal";
 
 type Bubble = ChatMessage & {
@@ -142,6 +143,10 @@ export default function ChatScreen() {
   const { user } = useAuth();
   const seniorName = user?.name ?? "";
   const voice = useVoiceInput(language);
+  // Best-quality system TTS voice for the senior's chosen language.
+  // Null while loading or if no enhanced voice is installed; in either
+  // case Speech.speak below falls back to the OS default.
+  const speakVoiceId = useBestSpeechVoice(language);
   const listRef = useRef<FlatList<Bubble>>(null);
 
   // Two ways to land on this screen:
@@ -270,7 +275,16 @@ export default function ChatScreen() {
           : language === "es"
             ? "es-ES"
             : "en-US",
+      // Override the OS-default compact voice with the highest-quality
+      // installed voice for this language (Premium > Enhanced > Default).
+      // Undefined means "use the OS default" — same behavior as before
+      // this hook existed, which is the right fallback.
+      voice: speakVoiceId ?? undefined,
+      // Slightly slower than normal for senior-friendly listening + a
+      // touch above default pitch so the voice feels marginally warmer
+      // and less monotone, especially on the older Default voices.
       rate: 0.9,
+      pitch: 1.05,
     });
   }, [messages, settings.readAloud, language]);
 

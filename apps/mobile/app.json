@@ -62,7 +62,8 @@
           "microphonePermission": "TechBuddy needs microphone access so you can speak to Buddy instead of typing.",
           "speechRecognitionPermission": "TechBuddy needs speech recognition so it can turn your spoken words into text for Buddy."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

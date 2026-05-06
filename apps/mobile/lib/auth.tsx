@@ -8,9 +8,23 @@ import {
   type ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 import { setApiUserId } from "./api";
 
+/**
+ * Where the user blob lives.
+ *
+ * Prior to 2026-05-06 this was kept in AsyncStorage, which is plaintext
+ * on disk and readable by anything with app-storage access (the audit
+ * flagged it as P0). The id functions as a bearer credential — leaking
+ * it impersonates the account.
+ *
+ * It now lives in `expo-secure-store`, which wraps iOS Keychain and
+ * Android Keystore. On first launch after this change, we migrate any
+ * existing AsyncStorage value into SecureStore and remove the legacy
+ * copy, so existing testers don't get logged out.
+ */
 const STORAGE_KEY = "techbuddy.user.v1";
 
 export type AuthUser = {
@@ -23,7 +37,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   /** Replace the current user (used during onboarding and sign-out). */
   setUser: (next: AuthUser | null) => void;
-  /** True after AsyncStorage hydration completes. Wait for this before routing. */
+  /** True after hydration completes. Wait for this before routing. */
   ready: boolean;
 };
 
@@ -39,26 +53,97 @@ function isAuthUser(value: unknown): value is AuthUser {
   );
 }
 
+/**
+ * Read the user blob, preferring SecureStore. If nothing's there but
+ * the legacy AsyncStorage copy exists, copy it forward to SecureStore
+ * and delete the legacy one. Returns the AuthUser found, or null.
+ *
+ * This runs once per app launch (on AuthProvider mount). After the
+ * first successful migration, subsequent launches read directly from
+ * SecureStore — AsyncStorage is no longer touched for auth.
+ */
+async function loadAndMigrate(): Promise<AuthUser | null> {
+  // 1. Primary path: SecureStore.
+  try {
+    const secure = await SecureStore.getItemAsync(STORAGE_KEY);
+    if (secure) {
+      const parsed = JSON.parse(secure);
+      if (isAuthUser(parsed)) return parsed;
+    }
+  } catch {
+    // SecureStore unavailable (e.g. simulator without Keychain access)
+    // or corrupt JSON. Fall through to the legacy path.
+  }
+
+  // 2. Legacy path: AsyncStorage. Read once, migrate, delete.
+  try {
+    const legacy = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!legacy) return null;
+    const parsed = JSON.parse(legacy);
+    if (!isAuthUser(parsed)) return null;
+
+    // Best-effort migration. If the SecureStore write fails (rare —
+    // would mean the device fundamentally can't store secrets), we
+    // leave the AsyncStorage copy alone so the senior stays logged in
+    // and we can try again on the next launch.
+    try {
+      await SecureStore.setItemAsync(STORAGE_KEY, legacy);
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* swallow — keep legacy as fallback */
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persist the user blob to SecureStore and proactively delete any
+ * lingering legacy copy. The AsyncStorage cleanup is idempotent — no-op
+ * if there was nothing there.
+ */
+async function persistUser(next: AuthUser | null): Promise<void> {
+  if (next) {
+    try {
+      await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // SecureStore write failed — fall back to AsyncStorage so the
+      // senior stays logged in. Better leaky than logged out for v1.
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(
+        () => {}
+      );
+      return;
+    }
+    // Belt-and-suspenders: clear any legacy copy.
+    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+  } else {
+    // Sign-out: wipe both backends.
+    SecureStore.deleteItemAsync(STORAGE_KEY).catch(() => {});
+    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [ready, setReady] = useState(false);
 
   // Hydrate from disk on mount.
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (!raw) return;
-        try {
-          const parsed = JSON.parse(raw);
-          if (isAuthUser(parsed)) {
-            setUserState(parsed);
-          }
-        } catch {
-          /* corrupt storage — fall back to no user */
-        }
+    let cancelled = false;
+    loadAndMigrate()
+      .then((u) => {
+        if (cancelled) return;
+        if (u) setUserState(u);
       })
       .catch(() => {})
-      .finally(() => setReady(true));
+      .finally(() => {
+        if (!cancelled) setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Keep the api module's user id in sync so all fetches send the right
@@ -69,11 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setUser = useCallback((next: AuthUser | null) => {
     setUserState(next);
-    if (next) {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
-    } else {
-      AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
-    }
+    void persistUser(next);
   }, []);
 
   const value = useMemo<AuthContextValue>(

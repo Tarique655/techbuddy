@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { acceptFamilyInvite } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { formatApiError } from "@/lib/format-api-error";
 
 /**
  * Landing page: a family member arrives here with a 6-digit invite code
@@ -62,11 +63,7 @@ export default function LandingPage() {
       setUser(res.user);
       router.replace("/dashboard");
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Something went wrong.";
-      // Trim noisy "Request failed (404):" prefixes for senior-portal-style
-      // friendliness — the underlying API messages are already user-safe.
-      setError(msg.replace(/^Request failed \(\d+\):\s*/, ""));
+      setError(formatApiError(err));
       setSubmitting(false);
     }
   }

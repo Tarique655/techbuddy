@@ -8,7 +8,20 @@
  * Server actions are deliberately NOT used here — keeping all calls on the
  * client lets us share the auth token easily and keeps the backend the
  * single source of truth (no proxy through Next).
+ *
+ * Wire types (DeviceKey, SessionStatus, Urgency, RecommendedRoute,
+ * IssueSummary, ...) come from @techbuddy/shared so the family portal
+ * and the mobile app can't drift apart on the same DTOs.
  */
+import type {
+  DeviceKey,
+  IssueSummary,
+  RecommendedRoute,
+  SessionStatus,
+  Urgency,
+} from "@techbuddy/shared";
+
+export type { DeviceKey, IssueSummary, RecommendedRoute, SessionStatus, Urgency };
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -76,21 +89,6 @@ export async function acceptFamilyInvite(input: {
 // Linked seniors
 // ============================================================================
 
-export type DeviceKey =
-  | "computer"
-  | "phone"
-  | "tablet"
-  | "tv"
-  | "printer"
-  | "wifi"
-  | "other";
-
-export type SessionStatus =
-  | "active"
-  | "resolved_ai"
-  | "escalated"
-  | "abandoned";
-
 export type LinkedSenior = {
   seniorUserId: string;
   name: string;
@@ -115,25 +113,6 @@ export async function listLinkedSeniors(): Promise<LinkedSenior[]> {
 // ============================================================================
 // Senior session list (with summaries)
 // ============================================================================
-
-export type Urgency = "low" | "medium" | "high";
-export type RecommendedRoute =
-  | "ai"
-  | "ai_with_human_fallback"
-  | "human";
-
-export type IssueSummary = {
-  problem: string;
-  goal: string;
-  tags: string[];
-  complexity: number;
-  urgency: Urgency;
-  recommendRoute: RecommendedRoute;
-  imageAttached: boolean;
-  messageCount: number;
-  generatedAt: string;
-  updatedAt: string;
-};
 
 export type SeniorSession = {
   id: string;

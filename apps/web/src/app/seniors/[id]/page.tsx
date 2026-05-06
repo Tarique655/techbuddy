@@ -20,6 +20,7 @@ import {
   urgencyLabel,
   urgencyTone,
 } from "@/lib/formatters";
+import { formatApiError } from "@/lib/format-api-error";
 import { PortalHeader } from "@/components/portal-header";
 
 /**
@@ -69,8 +70,7 @@ export default function SeniorPage() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : "Couldn't load.";
-        setError(msg.replace(/^Request failed \(\d+\):\s*/, ""));
+        setError(formatApiError(err));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

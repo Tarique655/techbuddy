@@ -19,6 +19,8 @@ import {
 import { useT, type Language, type StringKey } from "@/lib/i18n";
 import { useHaptics } from "@/lib/haptics";
 import { safeErrorMessage } from "@/lib/safe-error";
+import { formatTimeAgo } from "@/lib/format-time-ago";
+import { ScreenHeader } from "@/components/screen-header";
 
 const DEVICE_LABEL_KEY: Record<DeviceKey, StringKey> = {
   computer: "card_computer",
@@ -43,35 +45,8 @@ const STATUS_BADGE: Record<SessionStatus, BadgeStyle | null> = {
   abandoned: null,
 };
 
-/** Mirrors Home's time-ago — kept in sync by hand for now. */
-function formatTimeAgo(
-  iso: string,
-  t: (key: StringKey, vars?: Record<string, string | number>) => string,
-  language: Language,
-  now: Date = new Date()
-): string {
-  const then = new Date(iso);
-  const diffMs = now.getTime() - then.getTime();
-  const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 2) return t("time_now");
-  if (minutes < 60) return t("time_minutes_ago", { n: minutes });
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return hours === 1 ? t("time_hour_ago") : t("time_hours_ago", { n: hours });
-  }
-  const days = Math.floor(hours / 24);
-  if (days === 1) return t("time_yesterday");
-  if (days < 7) return t("time_days_ago", { n: days });
-  // Pick a locale for the date formatter that matches the senior's chosen
-  // language. `undefined` falls back to the system locale, which is right
-  // for English (we don't want to override en-GB → en-US, etc.).
-  const dateLocale =
-    language === "fr" ? "fr-CA" : language === "es" ? "es-ES" : undefined;
-  return then.toLocaleDateString(dateLocale, {
-    month: "short",
-    day: "numeric",
-  });
-}
+// formatTimeAgo lives in @/lib/format-time-ago — single source of truth
+// shared with the linked-family-members list in settings.tsx.
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -106,24 +81,7 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={t("back_a11y")}
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.backButtonPressed,
-          ]}
-          hitSlop={12}
-        >
-          <Text style={styles.backArrow}>‹</Text>
-          <Text style={styles.backText}>{t("back")}</Text>
-        </Pressable>
-
-        <Text style={styles.headerTitle}>{t("history_title")}</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title={t("history_title")} onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

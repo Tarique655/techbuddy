@@ -3,6 +3,7 @@ import type { ComponentProps } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -17,9 +18,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system/legacy";
 import * as Speech from "expo-speech";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -39,6 +37,11 @@ import { useAuth } from "@/lib/auth";
 import { useVoiceInput } from "@/lib/use-voice-input";
 import { useBestSpeechVoice } from "@/lib/use-best-voice";
 import { safeErrorMessage } from "@/lib/safe-error";
+import {
+  pickFromGalleryAndEncode,
+  takePhotoAndEncode,
+  type PickedImage,
+} from "@/lib/pick-and-encode-image";
 import { BugReportModal } from "@/components/bug-report-modal";
 
 type Bubble = ChatMessage & {
@@ -236,7 +239,11 @@ export default function ChatScreen() {
       isGreeting: true,
     };
     return [greeting, ...turns];
-  }, [messages, device, initialSessionId, t]);
+    // seniorName is captured by buildGreeting — including it here keeps
+    // the memo honest if a future "edit your name" flow lets the senior
+    // change it mid-session. Same reason language is in the dep list:
+    // buildGreeting uses t() which is language-bound.
+  }, [messages, device, initialSessionId, t, seniorName]);
 
   // Scroll to bottom whenever messages or sending state changes.
   useEffect(() => {
@@ -287,7 +294,12 @@ export default function ChatScreen() {
       rate: 0.9,
       pitch: 1.05,
     });
-  }, [messages, settings.readAloud, language]);
+    // speakVoiceId is read inside the effect (the `voice:` option). If
+    // the senior installs a higher-quality voice mid-session, the next
+    // assistant turn should pick it up — without this dep, React would
+    // skip re-running and we'd keep using the old voice id until the
+    // next message change happened to coincide with a re-render.
+  }, [messages, settings.readAloud, language, speakVoiceId]);
 
   // Always stop any in-flight speech when the screen unmounts (back button,
   // navigation away). Avoids Buddy's voice continuing on Home.
@@ -296,6 +308,22 @@ export default function ChatScreen() {
       Speech.stop();
     };
   }, []);
+
+  // Stop both TTS and voice recognition when the app backgrounds. Without
+  // this, leaving the app while Buddy is reading a reply (or the senior
+  // is dictating) leaves the mic indicator / audio session active on
+  // both platforms — disorienting for seniors and battery-wasteful.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "background" || next === "inactive") {
+        Speech.stop();
+        if (voice.state === "listening") {
+          voice.stop();
+        }
+      }
+    });
+    return () => sub.remove();
+  }, [voice]);
 
   // Pipe the live voice transcript into the composer's input field as the
   // senior speaks. While listening, every interim result replaces the text;
@@ -480,16 +508,24 @@ export default function ChatScreen() {
   }
 
   /**
-   * Camera button: ask permission → open the rear camera directly →
-   * process the result. No intermediate chooser. The native camera UI
-   * handles its own preview/confirm step.
+   * Camera button: open the rear camera, encode the result, send. The
+   * resize + base64 pipeline lives in lib/pick-and-encode-image.ts so
+   * chat and bug-report-modal share one implementation.
    */
   async function handleTakePhoto() {
     if (isSending) return;
     haptics.selection();
 
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
+    let result;
+    try {
+      result = await takePhotoAndEncode();
+    } catch (err) {
+      console.error("[chat] camera failed", safeErrorMessage(err));
+      Alert.alert(t("alert_camera_open_title"), t("alert_camera_open_body"));
+      return;
+    }
+
+    if (result.kind === "permission-denied") {
       Alert.alert(
         t("alert_camera_permission_title"),
         t("alert_camera_permission_body"),
@@ -497,90 +533,50 @@ export default function ChatScreen() {
       );
       return;
     }
+    if (result.kind === "cancelled") return;
 
-    let result: ImagePicker.ImagePickerResult;
-    try {
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-        allowsEditing: false,
-        // Rear camera by default — seniors are pointing at another screen.
-        cameraType: ImagePicker.CameraType.back,
-      });
-    } catch (err) {
-      console.error("[chat] camera failed", safeErrorMessage(err));
-      Alert.alert(t("alert_camera_open_title"), t("alert_camera_open_body"));
-      return;
-    }
-
-    if (result.canceled || !result.assets?.[0]) return;
-    await processAndSendImage(result.assets[0]);
+    await sendImage(result.image);
   }
 
   /**
-   * Gallery button: open the OS Photo Picker directly. This is how
-   * seniors send screenshots.
-   *
-   * IMPORTANT: do NOT call `requestMediaLibraryPermissionsAsync` here.
-   * On Android 13+ the system Photo Picker is permissionless and is
-   * the correct photo-gallery experience. Requesting permission first
-   * routes through the legacy Storage Access Framework, which presents
-   * the file explorer instead — exactly the wrong UX for this button.
+   * Gallery button: open the OS Photo Picker. Used for screenshots
+   * the senior already saved. Permissionless on Android 13+ and on
+   * iOS the system limited-Photos picker handles its own consent.
    */
   async function handlePickFromGallery() {
     if (isSending) return;
     haptics.selection();
 
-    let result: ImagePicker.ImagePickerResult;
+    let result;
     try {
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        quality: 0.8,
-        allowsEditing: false,
-        selectionLimit: 1,
-      });
+      result = await pickFromGalleryAndEncode();
     } catch (err) {
       console.error("[chat] gallery failed", safeErrorMessage(err));
       Alert.alert(t("alert_gallery_open_title"), t("alert_camera_open_body"));
       return;
     }
 
-    if (result.canceled || !result.assets?.[0]) return;
-    await processAndSendImage(result.assets[0]);
+    if (result.kind === "cancelled") return;
+    await sendImage(result.image);
   }
 
   /**
-   * Shared post-pick path: resize, base64-encode, and hand off to sendTurn.
-   * Used by both the camera and gallery flows so they have identical
-   * upload behavior.
+   * Shared post-pick path: hand off the encoded image to sendTurn.
+   * Wraps the setIsSending dance so the picker handlers stay simple.
    */
-  async function processAndSendImage(
-    asset: ImagePicker.ImagePickerAsset
-  ): Promise<void> {
+  async function sendImage(image: PickedImage): Promise<void> {
     setIsSending(true);
     try {
-      // Resize so we don't ship a 4000×3000 photo to Claude. 1600px on
-      // the long edge keeps text readable while compressing 3–5×.
-      const resized = await ImageManipulator.manipulateAsync(
-        asset.uri,
-        [{ resize: { width: 1600 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      const base64 = await FileSystem.readAsStringAsync(resized.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      // Hand off to the shared turn-sender. setIsSending(false) inside it
-      // would race with our own true above, so unset here first.
+      // setIsSending(false) inside sendTurn would race with our true
+      // above, so unset here first.
       setIsSending(false);
       await sendTurn({
         text: input,
-        image: { base64, mediaType: "image/jpeg" },
-        imageUri: resized.uri,
+        image: image.payload,
+        imageUri: image.uri,
       });
     } catch (err) {
-      console.error("[chat] photo prep failed", safeErrorMessage(err));
+      console.error("[chat] photo send failed", safeErrorMessage(err));
       Alert.alert(t("alert_photo_send_title"), t("alert_photo_send_body"));
       setIsSending(false);
     }

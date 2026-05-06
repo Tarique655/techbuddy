@@ -7,7 +7,20 @@
  *
  * In dev, this points at the dev machine's LAN IP (e.g. http://192.168.1.50:4000)
  * so the senior's phone can reach the backend over Wi-Fi.
+ *
+ * Wire types (DeviceKey, SessionStatus, ImageInput, IssueSummary, ...)
+ * live in @techbuddy/shared so this app and the family portal can't
+ * drift apart. Anything mobile-only (mobile API request shapes, local
+ * UI types) stays in this file.
  */
+import type {
+  DeviceKey,
+  ImageInput,
+  MessageRole,
+  SessionStatus,
+} from "@techbuddy/shared";
+
+export type { DeviceKey, ImageInput, MessageRole, SessionStatus };
 
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -76,23 +89,14 @@ export async function getCurrentUser(): Promise<AuthenticatedUser> {
   return data.user;
 }
 
+/**
+ * One message turn in the chat transcript. `role` and the wire format
+ * for `MessageRole` come from @techbuddy/shared.
+ */
 export type ChatMessage = {
-  role: "user" | "assistant";
+  role: MessageRole;
   content: string;
 };
-
-/**
- * Device the senior is asking about. Stable wire format used by the
- * device picker, the chat screen, and the backend system prompt.
- */
-export type DeviceKey =
-  | "computer"
-  | "phone"
-  | "tablet"
-  | "tv"
-  | "printer"
-  | "wifi"
-  | "other";
 
 type ChatResponse = {
   /** The session this message was appended to. The client should remember
@@ -100,12 +104,6 @@ type ChatResponse = {
   sessionId: string;
   message: ChatMessage;
   usage?: { input_tokens: number; output_tokens: number };
-};
-
-export type ImageInput = {
-  /** Base64-encoded image data, no `data:` prefix. */
-  base64: string;
-  mediaType: "image/jpeg" | "image/png" | "image/webp";
 };
 
 /**
@@ -150,8 +148,6 @@ export async function sendChatMessage(params: {
 // ===========================================================================
 // Sessions list
 // ===========================================================================
-
-export type SessionStatus = "active" | "resolved_ai" | "escalated" | "abandoned";
 
 export type SessionSummary = {
   id: string;

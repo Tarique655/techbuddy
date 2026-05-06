@@ -13,17 +13,19 @@ import {
   TextInput,
   View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system/legacy";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 
-import { submitBugReport, type BugReportScreen, type ImageInput } from "@/lib/api";
+import { submitBugReport, type BugReportScreen } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
 import { safeErrorMessage } from "@/lib/safe-error";
+import {
+  pickFromGalleryAndEncode,
+  takePhotoAndEncode,
+  type PickedImage,
+} from "@/lib/pick-and-encode-image";
 
 type Props = {
   visible: boolean;
@@ -32,13 +34,6 @@ type Props = {
   screen: BugReportScreen;
   /** When reporting from chat, attach the active session id for context. */
   sessionId?: string;
-};
-
-type LocalImage = {
-  /** Local file URI for the preview <Image>. */
-  uri: string;
-  /** Wire-format payload we'll POST to the API. */
-  payload: ImageInput;
 };
 
 /**
@@ -51,8 +46,9 @@ type LocalImage = {
  *      auto-close after a short delay so the senior is back on their
  *      original screen without any further taps.
  *
- * Image handling mirrors the chat composer: take-photo or pick-from-gallery,
- * resize to 1600px on the long edge, JPEG q0.7, base64-encode for the wire.
+ * Image handling routes through lib/pick-and-encode-image so chat and
+ * bug-report share one resize+encode pipeline (1600px long edge, JPEG
+ * q0.7, base64 for the wire).
  */
 export function BugReportModal({ visible, onClose, screen, sessionId }: Props) {
   const { t, language } = useT();
@@ -60,7 +56,7 @@ export function BugReportModal({ visible, onClose, screen, sessionId }: Props) {
   const haptics = useHaptics();
 
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState<LocalImage | null>(null);
+  const [image, setImage] = useState<PickedImage | null>(null);
   const [sending, setSending] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -83,8 +79,16 @@ export function BugReportModal({ visible, onClose, screen, sessionId }: Props) {
     if (sending) return;
     haptics.selection();
 
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
+    let result;
+    try {
+      result = await takePhotoAndEncode();
+    } catch (err) {
+      console.error("[bug-report] camera failed", safeErrorMessage(err));
+      Alert.alert(t("alert_camera_open_title"), t("alert_camera_open_body"));
+      return;
+    }
+
+    if (result.kind === "permission-denied") {
       Alert.alert(
         t("alert_camera_permission_title"),
         t("alert_camera_permission_body"),
@@ -92,69 +96,26 @@ export function BugReportModal({ visible, onClose, screen, sessionId }: Props) {
       );
       return;
     }
+    if (result.kind === "cancelled") return;
 
-    let result: ImagePicker.ImagePickerResult;
-    try {
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-        allowsEditing: false,
-        cameraType: ImagePicker.CameraType.back,
-      });
-    } catch (err) {
-      console.error("[bug-report] camera failed", safeErrorMessage(err));
-      Alert.alert(t("alert_camera_open_title"), t("alert_camera_open_body"));
-      return;
-    }
-
-    if (result.canceled || !result.assets?.[0]) return;
-    await prepareImage(result.assets[0]);
+    setImage(result.image);
   }
 
   async function handlePickFromGallery() {
     if (sending) return;
     haptics.selection();
 
-    let result: ImagePicker.ImagePickerResult;
+    let result;
     try {
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        quality: 0.8,
-        allowsEditing: false,
-        selectionLimit: 1,
-      });
+      result = await pickFromGalleryAndEncode();
     } catch (err) {
       console.error("[bug-report] gallery failed", safeErrorMessage(err));
       Alert.alert(t("alert_gallery_open_title"), t("alert_camera_open_body"));
       return;
     }
 
-    if (result.canceled || !result.assets?.[0]) return;
-    await prepareImage(result.assets[0]);
-  }
-
-  /**
-   * Resize, encode, and stash an image so the user can preview it before
-   * sending. Same processing pipeline as the chat composer.
-   */
-  async function prepareImage(asset: ImagePicker.ImagePickerAsset) {
-    try {
-      const resized = await ImageManipulator.manipulateAsync(
-        asset.uri,
-        [{ resize: { width: 1600 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      const base64 = await FileSystem.readAsStringAsync(resized.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      setImage({
-        uri: resized.uri,
-        payload: { base64, mediaType: "image/jpeg" },
-      });
-    } catch (err) {
-      console.error("[bug-report] image prep failed", safeErrorMessage(err));
-      Alert.alert(t("alert_photo_send_title"), t("alert_photo_send_body"));
-    }
+    if (result.kind === "cancelled") return;
+    setImage(result.image);
   }
 
   function handleRemoveImage() {

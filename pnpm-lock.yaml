@@ -70,6 +70,9 @@ importers:
       '@sentry/react-native':
         specifier: ^8.10.0
         version: 8.10.0(@expo/env@2.0.11)(dotenv@16.6.1)(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      '@techbuddy/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       expo:
         specifier: ~54.0.33
         version: 54.0.34(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(expo-router@6.0.23)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
@@ -167,6 +170,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@techbuddy/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       next:
         specifier: ^15.0.3
         version: 15.5.15(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -205,7 +211,11 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
-  packages/shared: {}
+  packages/shared:
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
 
 packages:
 

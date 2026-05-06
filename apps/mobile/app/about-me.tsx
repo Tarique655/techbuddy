@@ -26,6 +26,7 @@ import {
 import { useT, type StringKey } from "@/lib/i18n";
 import { useHaptics } from "@/lib/haptics";
 import { safeErrorMessage } from "@/lib/safe-error";
+import { ScreenHeader } from "@/components/screen-header";
 
 type SectionDef = {
   kind: UserContextKind;
@@ -122,24 +123,7 @@ export default function AboutMeScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={t("back_a11y")}
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.backButtonPressed,
-          ]}
-          hitSlop={12}
-        >
-          <Text style={styles.backArrow}>‹</Text>
-          <Text style={styles.backText}>{t("back")}</Text>
-        </Pressable>
-
-        <Text style={styles.headerTitle}>{t("about_me_title")}</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title={t("about_me_title")} onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

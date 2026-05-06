@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
 
 import { useAuth } from "@/lib/auth";
-import { useT, type Language, type StringKey } from "@/lib/i18n";
+import { useT, type Language } from "@/lib/i18n";
 import {
   useSettings,
   type FontScale,
@@ -29,6 +29,7 @@ import {
   type SeniorFamilyLink,
 } from "@/lib/api";
 import { safeErrorMessage } from "@/lib/safe-error";
+import { formatTimeAgo } from "@/lib/format-time-ago";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -496,7 +497,7 @@ function FamilyLinkRow({
   onRemove: () => void;
 }) {
   const { t } = useT();
-  const when = formatLinkAddedWhen(link.createdAt, language, t);
+  const when = formatTimeAgo(link.createdAt, t, language);
   return (
     <View style={styles.linkRow}>
       <View style={styles.linkRowText}>
@@ -524,26 +525,10 @@ function FamilyLinkRow({
   );
 }
 
-/**
- * Format a "when" string for the linked-family row in the senior's chosen
- * language. Same pattern as history.tsx but without the "minutes ago"
- * granularity — link creation is always coarse-grained.
- */
-function formatLinkAddedWhen(
-  iso: string,
-  language: Language,
-  t: (key: StringKey, vars?: Record<string, string | number>) => string
-): string {
-  const then = new Date(iso);
-  const diffMs = Date.now() - then.getTime();
-  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-  if (days < 1) return t("time_now");
-  if (days === 1) return t("time_yesterday");
-  if (days < 7) return t("time_days_ago", { n: days });
-  const locale =
-    language === "fr" ? "fr-CA" : language === "es" ? "es-ES" : undefined;
-  return then.toLocaleDateString(locale, { month: "short", day: "numeric" });
-}
+// formatTimeAgo lives in @/lib/format-time-ago — see history.tsx for the
+// other consumer. The previous bespoke `formatLinkAddedWhen` here threw
+// away minute/hour granularity which produced confusingly stale timestamps
+// when a senior issued a code and a family member accepted minutes later.
 
 const styles = StyleSheet.create({
   safe: {

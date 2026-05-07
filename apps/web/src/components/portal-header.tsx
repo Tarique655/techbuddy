@@ -7,7 +7,8 @@ import { useAuth } from "@/lib/auth-context";
 
 /**
  * Shared header for all authenticated portal pages. Brand on the left,
- * sign-out (which just wipes localStorage) on the right.
+ * sign-out (which clears the `tb_session` HttpOnly cookie via
+ * /api/auth/signout, plus wipes the localStorage name hint) on the right.
  *
  * No nav menu yet — there's only one screen worth navigating to. Add a
  * proper nav once the portal grows past dashboard + senior detail.

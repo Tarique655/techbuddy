@@ -13,6 +13,7 @@
   "dependencies": {
     "@sentry/nextjs": "^8.45.0",
     "@techbuddy/shared": "workspace:*",
+    "jose": "^5.9.6",
     "next": "^15.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

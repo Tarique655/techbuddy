@@ -11,11 +11,14 @@ import { formatApiError } from "@/lib/format-api-error";
  * Landing page: a family member arrives here with a 6-digit invite code
  * the senior gave them. They type the code, their own name, and an
  * optional label for the senior ("Mom", "Grandpa Joe"). On submit we
- * call POST /v1/family/accept, persist the returned user id, and
- * redirect to the dashboard.
+ * POST to /api/family/accept (Next route handler) which proxies to the
+ * Fastify API, sets the `tb_session` HttpOnly cookie on the Vercel
+ * origin, and returns the user JSON. We sync that to in-memory state
+ * and redirect to the dashboard.
  *
- * If the family member is already logged in (localStorage has a stored
- * id from a previous visit), we redirect straight to the dashboard.
+ * If the family member is already signed in (cookie valid), the auth
+ * context's hydration pass sets `user` after /api/auth/me resolves and
+ * we redirect to the dashboard automatically.
  */
 export default function LandingPage() {
   const router = useRouter();

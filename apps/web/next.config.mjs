@@ -14,14 +14,26 @@ const API_ORIGIN =
  * 'unsafe-inline' and we have no choice on App Router), connect to
  * self + the API + Sentry, no plugins, no framing.
  *
+ * Dev caveat: Next's dev server uses `eval()` for hot module replacement
+ * (React Refresh, the chunked module loader, etc.). Production builds
+ * don't. We add 'unsafe-eval' to script-src ONLY when NODE_ENV !==
+ * "production" so prod stays locked down. Without this, dev-mode
+ * hydration silently fails and the page renders as static HTML —
+ * forms do default POSTs, links do full navigations, etc.
+ *
  * If we add Sentry on the web side later, its ingest origin needs to
  * land in connect-src. If we add a CDN for fonts or images, those
  * origins land in font-src / img-src.
  */
 function buildCsp() {
+  const isDev = process.env.NODE_ENV !== "production";
+  const scriptSrc = isDev
+    ? ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+    : ["'self'", "'unsafe-inline'"];
+
   const directives = {
     "default-src": ["'self'"],
-    "script-src": ["'self'", "'unsafe-inline'"],
+    "script-src": scriptSrc,
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:"],
     "font-src": ["'self'", "data:"],

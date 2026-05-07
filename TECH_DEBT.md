@@ -6,6 +6,24 @@ Last reviewed: 2026-05-06
 
 ---
 
+## Pending production-build tasks
+
+Items that aren't shortcuts but DO need to happen the next time we cut a production build.
+
+### When the next production build ships (TestFlight / Play Store), publish the JWT auth OTA to the production branch
+
+**Context:** Stage B of the JWT migration (see JWT_MIGRATION_PLAN.md) shipped to the `preview` channel on 2026-05-06 and was tested there. We deliberately skipped the production-channel promote at the time because no production build existed to receive it. That's still true — but if/when a TestFlight or Play Store build goes out, it ships with whatever's on the `production` OTA branch, which currently has nothing.
+
+**Action when the next production build is queued:**
+
+```powershell
+cd "C:\Users\Tariq\Documents\Claude\Projects\Senior IT Help\techbuddy\apps\mobile"
+eas update --branch production --message "JWT auth"
+```
+
+That puts the JWT auth bundle on the production branch so the build picks it up on first foreground.
+
+**Why this matters:** without this step, a fresh production install would NOT include the JWT auth code — it'd be running whatever `apps/mobile/lib` looked like at the moment the binary was compiled. If that pre-dated Stage B, the binary would still send `X-User-Id`. With Stage A's multi-mode pre-handler that works, but it'd keep the `auth.legacy` Sentry counter non-zero indefinitely and block Stage E.
 
 ---
 

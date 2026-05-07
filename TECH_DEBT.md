@@ -27,6 +27,38 @@ That puts the JWT auth bundle on the production branch so the build picks it up 
 
 ---
 
+## Open mysteries (investigate when next touching mobile auth)
+
+### iOS Keychain may have silently failed to persist the Stage B JWT
+
+**What happened (2026-05-06 evening):** After shipping the JWT migration (Stages A–E in JWT_MIGRATION_PLAN.md), the Android preview build worked end-to-end (Bearer auth, chat, settings), but the iOS preview build started returning "Buddy is having trouble" on every chat attempt. Render logs showed:
+
+- `POST /v1/chat` → 401 in 1ms (auth check failed before any DB hit, so the Bearer was either missing or invalid signature/iss/aud — NOT a tokenVersion or "user deleted" failure)
+- followed by `POST /v1/auth/exchange` → 410 Gone (the post-Stage-E tombstone)
+
+The `1ms` 401 ruled out a slow path failure; the recovery path firing means `_currentAuth.userId` was set in memory. So the phone HAD a userId but either had no token (falling back to `X-User-Id`, which Stage E rejects) or an invalid token. The `exchangeAuthToken` recovery couldn't help because Stage E removed the endpoint.
+
+A manually-minted prod JWT for the same user verified fine via curl, ruling out any Stage E verify bug or a `JWT_SECRET` mismatch on Render. So the iOS phone's specific stored state was the culprit.
+
+**Recovery taken:** reinstalled the iOS app. Fresh onboarding via `POST /v1/users` returns the JWT inline, so a fresh install always starts with both user blob AND token in Keychain.
+
+**Why it likely happened (theories — confirm before fixing):**
+
+- `expo-secure-store`'s `setItemAsync` is fire-and-forget in our wrapper (catches errors, returns `false` silently). If iOS Keychain rejected a write at some point — passcode change mid-session, transient OS issue, kSecAttrAccessible mismatch — the in-memory token would have kept the session alive, but a force-quit + relaunch would have hit `getAuthToken() → null`, triggered exchange, and from Stage E onward had no recovery.
+- Android's Keystore is more forgiving here — same code path, fewer ways to silently fail.
+- Possible kSecAttrAccessibleWhenUnlocked vs AfterFirstUnlock subtlety we haven't characterized.
+
+**What to check when investigating:**
+
+1. Add diagnostic logging in `apps/mobile/lib/auth-token.ts:setAuthToken` — when the SecureStore write fails, capture the platform-specific error and ship to Sentry (currently swallowed).
+2. Audit every SecureStore call site for accessibility flag consistency. We use defaults today; consider moving to explicit `keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK` so locked-device background-fetch scenarios don't bite us.
+3. Consider belt-and-suspenders: if `setAuthToken` returns false, fall back to AsyncStorage with a clear "this is a fallback, not normal" tag. Keeps the senior signed in across restarts even when Keychain is unhappy.
+4. Repro: on an iPhone, foreground the app, force-quit, kill-and-restart 5–10 times rapidly. See if the JWT survives every time.
+
+**Why this isn't a P0:** the migration is shipped, both phones work normally now, the recovery (reinstall) is a one-time cost, and a future production-build OTA (per the other TECH_DEBT entry) would force-onboard anyone in this stuck state via the inline-token path. Worth understanding before more testers come on, not worth blocking on.
+
+---
+
 ## Active shortcuts
 
 ### 1. Render container start is fragile against Neon cold starts

@@ -238,6 +238,48 @@ const STRINGS = {
     // Photo intake helper text --------------------------------------------
     photo_default_caption: "Here's a photo of what I'm seeing.",
 
+    // Tutorial (How to use TechBuddy) -------------------------------------
+    // 6-card carousel shown automatically the first time a senior finishes
+    // onboarding, and re-runnable from Settings. Copy is deliberately short
+    // and concrete — each card teaches one action.
+    tutorial_skip: "Skip for now",
+    tutorial_skip_a11y: "Skip the tutorial. You can watch it again from Settings.",
+    tutorial_close_a11y: "Close the tutorial",
+    tutorial_next: "Next",
+    tutorial_next_a11y: "Show me the next tip",
+    tutorial_back_a11y: "Show me the previous tip",
+    tutorial_done: "Got it, let's go",
+    tutorial_done_a11y: "I'm ready to start using TechBuddy",
+    tutorial_progress: "Step {current} of {total}",
+
+    tutorial_welcome_title: "Here's how to use TechBuddy",
+    tutorial_welcome_body:
+      "A few quick tips so you know where everything is. It only takes a minute.",
+
+    tutorial_help_title: "The big blue button gets you help",
+    tutorial_help_body:
+      "Tap Get Help Now on the home screen, pick which device is giving you trouble, and Buddy will walk you through it one step at a time.",
+
+    tutorial_voice_title: "You can talk instead of type",
+    tutorial_voice_body:
+      "In a help session, tap the microphone button and just speak. Pause when you're done — Buddy will hear you.",
+
+    tutorial_photo_title: "Show Buddy what you're seeing",
+    tutorial_photo_body:
+      "If something looks confusing on your screen, take a screenshot or photo and tap the picture button to send it. A picture often helps Buddy understand right away.",
+
+    tutorial_history_title: "Your past help is always here",
+    tutorial_history_body:
+      "Tap See all my help history on the home screen to look back at anything Buddy has helped you with before.",
+
+    tutorial_family_title: "Family can lend a hand",
+    tutorial_family_body:
+      "In Settings, you can invite a family member with a simple code. They'll be able to see how Buddy is helping you so they can step in if needed.",
+
+    // Settings link to replay the tutorial.
+    settings_tutorial_link: "How to use TechBuddy",
+    settings_tutorial_link_desc: "Watch the quick tour again.",
+
     // Settings -------------------------------------------------------------
     settings: "Settings",
     settings_a11y: "Open settings",
@@ -551,6 +593,45 @@ const STRINGS = {
 
     photo_default_caption: "Voici une photo de ce que je vois.",
 
+    // Tutoriel (Comment utiliser TechBuddy) --------------------------------
+    tutorial_skip: "Passer pour l'instant",
+    tutorial_skip_a11y:
+      "Passer le tutoriel. Vous pouvez le revoir depuis les paramètres.",
+    tutorial_close_a11y: "Fermer le tutoriel",
+    tutorial_next: "Suivant",
+    tutorial_next_a11y: "Voir le conseil suivant",
+    tutorial_back_a11y: "Voir le conseil précédent",
+    tutorial_done: "Compris, c'est parti",
+    tutorial_done_a11y: "Je suis prêt à utiliser TechBuddy",
+    tutorial_progress: "Étape {current} sur {total}",
+
+    tutorial_welcome_title: "Voici comment utiliser TechBuddy",
+    tutorial_welcome_body:
+      "Quelques conseils rapides pour vous repérer. Ça ne prend qu'une minute.",
+
+    tutorial_help_title: "Le grand bouton bleu, c'est l'aide",
+    tutorial_help_body:
+      "Touchez Obtenir de l'aide sur l'écran d'accueil, choisissez l'appareil qui vous pose problème, et Buddy vous guidera étape par étape.",
+
+    tutorial_voice_title: "Vous pouvez parler au lieu d'écrire",
+    tutorial_voice_body:
+      "Dans une session d'aide, touchez le bouton du microphone et parlez simplement. Faites une pause quand vous avez terminé — Buddy vous entendra.",
+
+    tutorial_photo_title: "Montrez à Buddy ce que vous voyez",
+    tutorial_photo_body:
+      "Si quelque chose vous semble bizarre à l'écran, prenez une capture d'écran ou une photo et touchez le bouton image pour l'envoyer. Une image aide souvent Buddy à comprendre tout de suite.",
+
+    tutorial_history_title: "Votre historique reste toujours ici",
+    tutorial_history_body:
+      "Touchez Voir tout mon historique d'aide sur l'écran d'accueil pour revoir tout ce que Buddy vous a aidé à régler.",
+
+    tutorial_family_title: "Votre famille peut aider",
+    tutorial_family_body:
+      "Dans les paramètres, vous pouvez inviter un membre de votre famille avec un simple code. Il pourra voir comment Buddy vous aide et intervenir si besoin.",
+
+    settings_tutorial_link: "Comment utiliser TechBuddy",
+    settings_tutorial_link_desc: "Revoir la visite rapide.",
+
     settings: "Paramètres",
     settings_a11y: "Ouvrir les paramètres",
     settings_section_language: "Langue",
@@ -745,6 +826,45 @@ const STRINGS = {
     alert_voice_failed_title: "No le pude oír",
     alert_voice_failed_body:
       "Algo salió mal con el micrófono. Por favor, inténtelo de nuevo.",
+
+    // Tutorial (Cómo usar TechBuddy) --------------------------------------
+    tutorial_skip: "Saltar por ahora",
+    tutorial_skip_a11y:
+      "Saltar el tutorial. Puede volver a verlo desde Ajustes.",
+    tutorial_close_a11y: "Cerrar el tutorial",
+    tutorial_next: "Siguiente",
+    tutorial_next_a11y: "Ver el siguiente consejo",
+    tutorial_back_a11y: "Ver el consejo anterior",
+    tutorial_done: "Entendido, ¡vamos!",
+    tutorial_done_a11y: "Estoy listo para usar TechBuddy",
+    tutorial_progress: "Paso {current} de {total}",
+
+    tutorial_welcome_title: "Así se usa TechBuddy",
+    tutorial_welcome_body:
+      "Unos consejos rápidos para que sepa dónde está todo. Solo lleva un minuto.",
+
+    tutorial_help_title: "El botón azul grande es para pedir ayuda",
+    tutorial_help_body:
+      "Toque Pedir ayuda en la pantalla de inicio, elija el dispositivo que le da problemas y Buddy le guiará paso a paso.",
+
+    tutorial_voice_title: "Puede hablar en lugar de escribir",
+    tutorial_voice_body:
+      "En una sesión de ayuda, toque el botón del micrófono y simplemente hable. Pause cuando haya terminado — Buddy le oirá.",
+
+    tutorial_photo_title: "Muéstrele a Buddy lo que ve",
+    tutorial_photo_body:
+      "Si algo le parece raro en la pantalla, haga una captura de pantalla o una foto y toque el botón de imagen para enviársela. Una imagen suele ayudar a Buddy a entender al instante.",
+
+    tutorial_history_title: "Su historial siempre está aquí",
+    tutorial_history_body:
+      "Toque Ver todo mi historial de ayuda en la pantalla de inicio para repasar todo lo que Buddy le ha ayudado a resolver antes.",
+
+    tutorial_family_title: "Su familia puede echar una mano",
+    tutorial_family_body:
+      "En Ajustes puede invitar a un familiar con un código sencillo. Podrá ver cómo Buddy le está ayudando y echarle una mano cuando haga falta.",
+
+    settings_tutorial_link: "Cómo usar TechBuddy",
+    settings_tutorial_link_desc: "Vuelva a ver la visita rápida.",
 
     settings: "Ajustes",
     settings_a11y: "Abrir los ajustes",

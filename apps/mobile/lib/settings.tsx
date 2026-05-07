@@ -20,12 +20,20 @@ export type Settings = {
   fontScale: FontScale;
   readAloud: boolean;
   hapticsEnabled: boolean;
+  /**
+   * Whether the senior has seen the "How to use TechBuddy" tutorial at least
+   * once. Set to true the first time they finish or skip the carousel; the
+   * Settings screen has a re-watch link that does NOT toggle this flag, so a
+   * replay never re-arms the first-run gate.
+   */
+  tutorialSeen: boolean;
 };
 
 const DEFAULTS: Settings = {
   fontScale: 1.0,
   readAloud: false,
   hapticsEnabled: true,
+  tutorialSeen: false,
 };
 
 const STORAGE_KEY = "techbuddy.settings.v1";
@@ -54,6 +62,14 @@ function sanitize(raw: unknown): Settings {
       typeof r.hapticsEnabled === "boolean"
         ? r.hapticsEnabled
         : DEFAULTS.hapticsEnabled,
+    // Existing installs that predate the tutorial flag fall through to the
+    // DEFAULT (false), which means the next launch will show the tutorial
+    // once. That's the correct behaviour for an upgrade — the tutorial is
+    // new content the senior hasn't seen.
+    tutorialSeen:
+      typeof r.tutorialSeen === "boolean"
+        ? r.tutorialSeen
+        : DEFAULTS.tutorialSeen,
   };
 }
 

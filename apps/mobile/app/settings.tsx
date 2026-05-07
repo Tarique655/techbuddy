@@ -126,6 +126,36 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={22} color="#5A6173" />
         </Pressable>
 
+        {/* How to use TechBuddy (replay tutorial) -------------------- */}
+        {/*
+          Re-runs the first-run tutorial in "replay" mode (?replay=1) — the
+          tutorial screen reads that param and skips toggling `tutorialSeen`,
+          so opening this row never re-arms the first-run gate. Mirror the
+          About-me row visually so seniors recognise the affordance.
+        */}
+        <Pressable
+          onPress={() => {
+            haptics.selection();
+            router.push("/tutorial?replay=1");
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t("settings_tutorial_link")}
+          style={({ pressed }) => [
+            styles.aboutMeLink,
+            pressed && styles.aboutMeLinkPressed,
+          ]}
+        >
+          <View style={styles.aboutMeText}>
+            <Text style={styles.aboutMeLabel}>
+              {t("settings_tutorial_link")}
+            </Text>
+            <Text style={styles.aboutMeDesc}>
+              {t("settings_tutorial_link_desc")}
+            </Text>
+          </View>
+          <Ionicons name="help-circle-outline" size={22} color="#2A6CF6" />
+        </Pressable>
+
         {/* Family ----------------------------------------------------- */}
         <Section title={t("invite_family_section")}>
           <Pressable

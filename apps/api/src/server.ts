@@ -59,9 +59,10 @@ await fastify.register(cors, {
     if (env.NODE_ENV === "development") return cb(null, true);
     cb(new Error("Not allowed by CORS"), false);
   },
-  // X-User-Id is the legacy header (Stage A multi-mode). Authorization
-  // is the JWT path. Both kept until Stage E removes the legacy column.
-  allowedHeaders: ["Content-Type", "X-User-Id", "Authorization"],
+  // Authorization is the only auth header post-Stage-E. (X-User-Id
+  // was the legacy v1-beta header; removed when JWT_MIGRATION_PLAN.md
+  // Stage E shipped.)
+  allowedHeaders: ["Content-Type", "Authorization"],
   // exposedHeaders: the mobile fetch wrapper reads X-Renewed-Token to
   // catch sliding renewals. Browsers won't expose it to JS unless we
   // list it explicitly.

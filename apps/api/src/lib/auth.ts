@@ -23,14 +23,14 @@ declare module "fastify" {
      * Authenticated user's role, set by the auth pre-handler. Empty
      * string on allowlisted paths. Routes can use this to short-circuit
      * the `db.user.findUnique({ select: { role: ... } })` they currently
-     * do, although that follow-up optimization isn't part of Stage A —
-     * see JWT_MIGRATION_PLAN.md §8.
+     * do, although that follow-up optimization isn't part of the JWT
+     * migration itself — see JWT_MIGRATION_PLAN.md §8.
      */
     userRole: AuthRole | "";
     /**
-     * Audience the request was authenticated under (mobile / web / "" if
-     * legacy header). Used by the renewal hook to decide where to put
-     * the renewed token (response header vs cookie).
+     * Audience the request was authenticated under (mobile / web).
+     * Used by the renewal hook to decide where to put the renewed
+     * token (response header for mobile, refreshed cookie for web).
      */
     authAudience: AuthAudience | "";
     /**
@@ -50,11 +50,16 @@ declare module "fastify" {
 }
 
 /**
- * Routes that anyone can hit without auth. Anything else requires either
- * a valid Bearer JWT or, while AUTH_ACCEPT_BEARER is on, a legacy
- * X-User-Id header that matches a user row.
+ * Routes that anyone can hit without auth. Anything else requires a
+ * valid Bearer JWT.
  *
  * Add rarely. The vast majority of API surface should be authenticated.
+ *
+ * History note: pre-Stage-E this list also included POST
+ * /v1/auth/exchange (the legacy-id → JWT migration helper). That
+ * endpoint now returns 410 Gone unconditionally, so it can stay off
+ * the allowlist — verifyAuthToken will return null on the missing
+ * header and the 401 will be overwritten by the route's 410.
  */
 function isAllowlisted(method: string, url: string): boolean {
   if (url === "/healthz") return true;
@@ -63,36 +68,34 @@ function isAllowlisted(method: string, url: string): boolean {
   // Family portal: a family member accepting an invite doesn't yet have a
   // user id. Accept creates the User row + FamilyLink and returns auth.
   if (method === "POST" && url === "/v1/family/accept") return true;
-  // Stage A migration helper: legacy-id holders hit this once to upgrade
-  // their X-User-Id session into a JWT. The body carries the userId
-  // (which is what the legacy header carried already), so this endpoint
-  // doesn't need a Bearer either. Rate-limited per IP in the route itself.
+  // The exchange endpoint is gone post-Stage-E (returns 410), but we
+  // allowlist it so the 410 reaches the client cleanly instead of the
+  // pre-handler short-circuiting with a 401.
   if (method === "POST" && url === "/v1/auth/exchange") return true;
   return false;
 }
 
 // =============================================================================
-// Bearer path
+// Bearer auth
 // =============================================================================
 
 /**
- * Read and verify a Bearer token. Returns:
- *   - payload on success
- *   - "missing" if no Authorization header present (caller falls back to legacy)
- *   - "invalid" if the header was present but the token failed verify or `tv` mismatch
+ * Read and verify a Bearer token. Returns the payload on success, null on
+ * any failure (no header, malformed header, invalid signature, expired,
+ * tokenVersion mismatch, user deleted).
  */
-async function tryBearerAuth(
+async function verifyRequestBearer(
   request: FastifyRequest
-): Promise<AuthTokenPayload | "missing" | "invalid"> {
+): Promise<AuthTokenPayload | null> {
   const header = request.headers.authorization;
-  if (!header || typeof header !== "string") return "missing";
-  if (!header.startsWith("Bearer ")) return "missing";
+  if (!header || typeof header !== "string") return null;
+  if (!header.startsWith("Bearer ")) return null;
 
   const raw = header.slice("Bearer ".length).trim();
-  if (raw.length === 0) return "missing";
+  if (raw.length === 0) return null;
 
   const payload = verifyAuthToken(raw);
-  if (!payload) return "invalid";
+  if (!payload) return null;
 
   // Verify the token's `tv` claim still matches the user's current
   // tokenVersion. A bumped tokenVersion (sign-out-everywhere, breach
@@ -102,55 +105,10 @@ async function tryBearerAuth(
     where: { id: payload.sub },
     select: { id: true, tokenVersion: true },
   });
-  if (!user) return "invalid";
-  if (user.tokenVersion !== payload.tv) return "invalid";
+  if (!user) return null;
+  if (user.tokenVersion !== payload.tv) return null;
 
   return payload;
-}
-
-// =============================================================================
-// Legacy X-User-Id path
-// =============================================================================
-
-interface LegacyAuthSuccess {
-  ok: true;
-  userId: string;
-  role: AuthRole;
-  tokenVersion: number;
-}
-interface LegacyAuthFailure {
-  ok: false;
-  error: "missing" | "user_not_found";
-}
-type LegacyAuthResult = LegacyAuthSuccess | LegacyAuthFailure;
-
-async function tryLegacyAuth(request: FastifyRequest): Promise<LegacyAuthResult> {
-  const headerVal = request.headers["x-user-id"];
-  const userId = Array.isArray(headerVal) ? headerVal[0] : headerVal;
-  if (!userId || typeof userId !== "string" || userId.length === 0) {
-    return { ok: false, error: "missing" };
-  }
-
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, role: true, tokenVersion: true },
-  });
-  if (!user) return { ok: false, error: "user_not_found" };
-
-  // Tag for Sentry/log dashboards so we can watch legacy-header usage
-  // drop to zero before flipping Stage E. Keep it cheap — request.log
-  // already routes through pino + Sentry breadcrumbs.
-  request.log.warn(
-    { userId: user.id, route: `${request.method} ${request.url}`, authMode: "legacy" },
-    "auth.legacy"
-  );
-
-  return {
-    ok: true,
-    userId: user.id,
-    role: user.role.toLowerCase() as AuthRole,
-    tokenVersion: user.tokenVersion,
-  };
 }
 
 // =============================================================================
@@ -207,10 +165,9 @@ function attachRenewedToken(
  * Register the auth flow. Call once in server.ts before any route
  * registration so the pre-handler covers everything.
  *
- * Stage A semantics: prefer Bearer JWT. If absent OR present-but-invalid,
- * fall back to the legacy X-User-Id path while AUTH_ACCEPT_BEARER is on.
- * Once Stage E ships, the legacy path is removed entirely (this whole
- * function shrinks back to ~15 lines).
+ * Stage E semantics: Bearer JWT only. Legacy X-User-Id is no longer
+ * accepted (history: it was the v1 beta credential and the multi-mode
+ * Stage A pre-handler accepted both during the migration).
  */
 export async function registerAuth(fastify: FastifyInstance): Promise<void> {
   fastify.decorateRequest("userId", "");
@@ -221,66 +178,28 @@ export async function registerAuth(fastify: FastifyInstance): Promise<void> {
   fastify.addHook("preHandler", async (request, reply) => {
     if (isAllowlisted(request.method, request.url)) return;
 
-    // -----------------------------------------------------------------
-    // Bearer path (preferred)
-    // -----------------------------------------------------------------
-    if (env.AUTH_ACCEPT_BEARER) {
-      const bearer = await tryBearerAuth(request);
-      if (bearer !== "missing") {
-        if (bearer === "invalid") {
-          return reply.code(401).send({
-            error: "invalid_token",
-            message: "Your session has expired. Please reopen the app.",
-          });
-        }
-        // Successful Bearer auth.
-        request.userId = bearer.sub;
-        request.userRole = bearer.role;
-        request.authAudience = bearer.aud;
-        if (shouldRenew(bearer)) {
-          // Stash the data needed to mint a fresh token; the actual
-          // mint happens in the onSend hook so we don't burn cycles
-          // on requests that 4xx out before reaching the handler.
-          // We need the user's CURRENT tokenVersion (already verified
-          // matches the token's tv above) — we already loaded the user
-          // row in tryBearerAuth, but didn't keep it. Re-look-up is
-          // wasteful; the typical case is no renewal, so optimize the
-          // happy path and accept this small extra read on the
-          // "halfway through TTL" edge.
-          request.pendingRenewedToken = {
-            role: bearer.role,
-            tokenVersion: bearer.tv,
-            audience: bearer.aud,
-          };
-        }
-        return;
-      }
-      // Bearer "missing" → fall through to legacy path.
-    }
-
-    // -----------------------------------------------------------------
-    // Legacy X-User-Id path
-    // -----------------------------------------------------------------
-    const legacy = await tryLegacyAuth(request);
-    if (!legacy.ok) {
-      if (legacy.error === "missing") {
-        return reply.code(401).send({
-          error: "user_id_required",
-          message: "Missing authentication. Please reopen the app.",
-        });
-      }
+    const payload = await verifyRequestBearer(request);
+    if (!payload) {
       return reply.code(401).send({
-        error: "user_not_found",
-        message: "Your session is invalid. Please reopen the app.",
+        error: "unauthorized",
+        message: "Your session has expired. Please reopen the app.",
       });
     }
 
-    request.userId = legacy.userId;
-    request.userRole = legacy.role;
-    request.authAudience = ""; // unknown — no JWT was used
-    // No renewal on the legacy path; legacy clients have no place to
-    // store a JWT that arrives in a header until they upgrade through
-    // /v1/auth/exchange.
+    request.userId = payload.sub;
+    request.userRole = payload.role;
+    request.authAudience = payload.aud;
+
+    if (shouldRenew(payload)) {
+      // Stash the data needed to mint a fresh token; the actual mint
+      // happens in the onSend hook so we don't burn cycles on requests
+      // that 4xx out before reaching the handler.
+      request.pendingRenewedToken = {
+        role: payload.role,
+        tokenVersion: payload.tv,
+        audience: payload.aud,
+      };
+    }
   });
 
   // onSend runs for every response, including ones the route handler

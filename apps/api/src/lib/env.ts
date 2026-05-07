@@ -32,14 +32,10 @@ const EnvSchema = z
     // Token issuer and audience claims. iss is global; aud is set per
     // surface (mobile / web) at sign time, not from env.
     JWT_ISSUER: z.string().default("techbuddy-api"),
-    // Stage A feature flag. When false, the auth pre-handler ignores
-    // Authorization: Bearer headers and only accepts the legacy
-    // X-User-Id path. Flipping this is the zero-downtime rollback for
-    // Stage A — see JWT_MIGRATION_PLAN.md §6.
-    AUTH_ACCEPT_BEARER: z
-      .enum(["true", "false"])
-      .default("true")
-      .transform((s) => s === "true"),
+    // (Stage A's `AUTH_ACCEPT_BEARER` env knob is gone post-Stage-E.
+    //  Bearer is the only auth path now; there's no legacy fallback to
+    //  toggle off.) If you set this in Render env, it's harmless — Zod
+    //  ignores unknown keys.
     CORS_ORIGINS: z
       .string()
       .default("http://localhost:3000,http://localhost:19006,http://localhost:8081")

@@ -185,7 +185,7 @@ These are intentionally NOT in v1. Add them when there's a real user demanding t
 
 - **Full chat transcripts.** Family sees summaries, not the back-and-forth. Adding this needs a senior-side toggle ("let my family read my messages") and an explicit consent flow. Privacy default-on.
 - **Bug reports view.** Family doesn't see the senior's bug-report submissions. Probably worth adding to the per-senior page later — useful so family can help diagnose.
-- **Real auth.** Device-bound auth is fine while there are <100 testers. Before any public launch, add either email + magic link (Resend) or a proper session token. Right now anyone with the family user id can act as that family member.
+- **Real auth.** ✅ **DONE 2026-05-06** — full JWT migration shipped (see JWT_MIGRATION_PLAN.md). Family portal now uses HttpOnly `tb_session` cookies set by Next route handlers on the Vercel origin; the JWT never enters client JS; Edge middleware gates `/dashboard` and `/seniors/*`. Email + magic link is still future work (would let a family member sign in from a second device without a fresh invite code), but the underlying auth model is no longer "device id as bearer."
 - **Family-side i18n.** Portal is English-only. The senior app is en/fr/es — the portal isn't yet. The strings are mostly inline JSX; would need a small i18n setup like `next-intl`.
 - **Multi-senior families with role nuances.** A family member can have multiple linked seniors (the model supports it), but there's no way for a family member to *invite a second family* on behalf of a senior, no notion of "primary" vs "view-only" family, no per-senior privacy tweaks.
 - **Notifications.** No push, no email digests, no "your senior had a high-urgency session" alerts. Big future feature.

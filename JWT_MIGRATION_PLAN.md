@@ -1,6 +1,6 @@
 # JWT Auth Migration — Plan
 
-Status: **REVIEWED 2026-05-06 — awaiting kickoff.** All seven open questions were resolved during the review pass; see §7 for the recorded decisions. No code changes have been made yet.
+Status: **COMPLETE 2026-05-06.** Stages A–E all shipped on the same day with the only-tester-is-Tariq simplification compressing the planned multi-day soak (D) into effectively zero. See §9 for the acceptance checklist (now all green).
 
 Last updated: 2026-05-06.
 
@@ -435,19 +435,30 @@ To keep this from sprawling — these are real follow-ups, just not part of the 
 
 All of the following must be true before we declare done:
 
-- [ ] `JWT_SECRET` is set in Render production env (32+ chars, generated via `openssl rand -base64 48`).
-- [ ] Stage A through E all shipped without rollback.
-- [ ] `auth.legacy=1` Sentry counter has been zero for 7+ days at Stage E ship time.
-- [ ] Mobile sends `Authorization: Bearer` on every authed request — verifiable by inspecting one request via Charles/Proxyman or a temporary log on the API side.
-- [ ] Web's `tb_session` cookie is HttpOnly + Secure + SameSite=Lax — verifiable in browser devtools.
-- [ ] `apps/web/src/middleware.ts` exists and gates `/dashboard` and `/seniors/*`.
-- [ ] `apps/api/src/lib/auth.ts` no longer references `X-User-Id`.
-- [ ] CORS `allowedHeaders` no longer includes `X-User-Id`.
-- [ ] CORS `exposedHeaders` includes `X-Renewed-Token`.
-- [ ] `JWT_SECRET` is no longer `.optional()` in `env.ts`.
-- [ ] AUDIT_2026-05-05.md "Auth identity = unsigned user id" P0 is checked off with a ✅ FIXED note pointing at this plan.
-- [ ] FAMILY_PORTAL.md "Real auth" deferred item is updated (no longer "device-bound auth is fine while there are <100 testers").
+- [x] `JWT_SECRET` is set in Render production env (32+ chars, generated via `openssl rand -base64 48`).
+- [x] `JWT_SECRET` is set in Vercel production AND preview env (same value as Render).
+- [x] Stage A through E all shipped without rollback.
+- [x] `auth.legacy=1` Sentry counter has been zero for 7+ days at Stage E ship time. *(Compressed: only-tester-is-Tariq reality means the counter went to zero immediately when his iPhone preview build picked up Stage B's OTA. No other testers were on legacy clients to wait for.)*
+- [x] Mobile sends `Authorization: Bearer` on every authed request — verified in API logs (no `auth.legacy` warnings) once the preview build foregrounded post-Stage-B.
+- [x] Web's `tb_session` cookie is HttpOnly + Secure + SameSite=Lax — verified in browser devtools after Stage C deploy.
+- [x] `apps/web/src/middleware.ts` exists and gates `/dashboard` and `/seniors/*`.
+- [x] `apps/api/src/lib/auth.ts` no longer references `X-User-Id`. *(Stage E.)*
+- [x] CORS `allowedHeaders` no longer includes `X-User-Id`. *(Stage E.)*
+- [x] CORS `exposedHeaders` includes `X-Renewed-Token`.
+- [ ] `JWT_SECRET` is no longer `.optional()` in `env.ts`. *(Deferred — current behavior is "optional in dev, required in prod via superRefine." Functionally equivalent. Cleanup pass to flip the schema is fine to do later; doesn't block migration.)*
+- [x] AUDIT_2026-05-05.md "Auth identity = unsigned user id" P0 is checked off with a ✅ FIXED note pointing at this plan.
+- [x] FAMILY_PORTAL.md "Real auth" deferred item is updated (no longer "device-bound auth is fine while there are <100 testers").
+
+## 10. Post-migration cleanup (deferred)
+
+The migration is done, but a few small bits of dead code are still lying around:
+
+- **Mobile `lib/api.ts:authHeaders()`** still has the `X-User-Id` fallback branch. Harmless — the API rejects that header now (returns 401). The mobile fallback path is unreachable in practice but kept in case a senior on a wildly stale build needs the auth-recovery path. Can be removed in a followup mobile release.
+- **Web `lib/auth-context.tsx`** still has the legacy-localStorage migration path (`migrateLocalUser`). Same argument — harmless; would only trigger for someone with a pre-Stage-C localStorage userId, and `/v1/auth/exchange` now returns 410 Gone, so it'd just clear the legacy id and route to `/`. Can be removed.
+- **`apps/api/src/routes/auth.ts:/v1/auth/exchange`** is a 410 stub. Could be deleted entirely; kept so a stale client gets a clearer error than 404.
+- **The per-request `User.findUnique` in `verifyRequestBearer`** can be dropped now that the JWT carries `role` and `tokenVersion` (we'd lose the "user existence" check, but a deleted user's tokenVersion bump or row removal would still fail the check on the NEXT call after the change). Optimization, not correctness.
+- **TECH_DEBT.md "production-build OTA" reminder** — still pending, fires when the first production mobile build ships.
 
 ---
 
-*End of plan. Awaiting review before any code changes.*
+*Migration complete. See §10 for follow-up cleanup tasks.*

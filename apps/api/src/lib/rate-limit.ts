@@ -141,20 +141,11 @@ export function checkChatRateLimit(userId: string): RateLimitDecision {
 
 const inviteAcceptBuckets = new Map<string, WindowedBuckets>();
 const userCreateBuckets = new Map<string, WindowedBuckets>();
-const authExchangeBuckets = new Map<string, WindowedBuckets>();
 
 const INVITE_ACCEPT_PER_MINUTE = 5;
 const INVITE_ACCEPT_PER_HOUR = 20;
 const USER_CREATE_PER_MINUTE = 5;
 const USER_CREATE_PER_HOUR = 20;
-// /v1/auth/exchange takes a known userId and mints a JWT. It's the
-// migration helper that lets a legacy-id client upgrade to a JWT. An
-// attacker who already knows a userId can call this, but they could
-// already use that userId as a bearer today, so the rate limit's job
-// is just to keep someone from enumerating the userId namespace —
-// 5/min from one IP plus the cuid keyspace makes that hopeless.
-const AUTH_EXCHANGE_PER_MINUTE = 5;
-const AUTH_EXCHANGE_PER_HOUR = 30;
 
 /** Rate-limit invite-code acceptance attempts per source IP. */
 export function checkInviteAcceptRateLimit(ip: string): RateLimitDecision {
@@ -176,12 +167,6 @@ export function checkUserCreateRateLimit(ip: string): RateLimitDecision {
   );
 }
 
-/** Rate-limit legacy-id → JWT exchange attempts per source IP. */
-export function checkAuthExchangeRateLimit(ip: string): RateLimitDecision {
-  return checkBucket(
-    authExchangeBuckets,
-    ip,
-    AUTH_EXCHANGE_PER_MINUTE,
-    AUTH_EXCHANGE_PER_HOUR
-  );
-}
+// (Stage E removed checkAuthExchangeRateLimit when /v1/auth/exchange
+// became 410 Gone. If we ever need a similar per-IP limiter, the
+// pattern lives in this file's git history.)

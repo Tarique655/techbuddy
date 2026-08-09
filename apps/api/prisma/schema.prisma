@@ -51,6 +51,21 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  /// Added 2026-08-09 alongside mandatory-signup onboarding. Nullable
+  /// because every account created before this point only has the
+  /// combined `name` field — firstName/lastName is additive metadata,
+  /// not a replacement. New signups always populate both plus `name`
+  /// (kept in sync as "firstName lastName") so every existing consumer
+  /// of `user.name` keeps working unmodified. Lets greetings/etc. use
+  /// just the first name where that reads more naturally.
+  firstName String? @map("first_name")
+  lastName  String? @map("last_name")
+  /// Optional, self-reported, purely informational (no feature gates on
+  /// it today). Nullable for the same reason as above. Was briefly a
+  /// plain `age Int?` (same day) — replaced with date of birth per
+  /// Tariq's call, since a DOB is more precise and doesn't go stale.
+  dateOfBirth DateTime? @map("date_of_birth") @db.Date
+
   /// Bumped to invalidate every JWT this user is currently holding —
   /// e.g. for sign-out-everywhere, suspicious-activity revocation, or
   /// any breach response. Stored as an int and embedded in the JWT as

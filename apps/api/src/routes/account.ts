@@ -35,8 +35,28 @@ const PasswordSchema = z
   .min(8, "Password must be at least 8 characters")
   .max(128);
 
+const NameSchema = z.string().trim().min(1).max(50);
+// Optional, wire format "YYYY-MM-DD" (mobile builds this from three
+// separate Month/Day/Year fields — see onboarding.tsx). Purely
+// informational, nothing gates on it. Validated for shape + a sane
+// real-world range, not just "is this a date".
+const DateOfBirthSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth must be in YYYY-MM-DD format")
+  .transform((s) => new Date(`${s}T00:00:00.000Z`))
+  .refine((d) => !Number.isNaN(d.getTime()), "Invalid date of birth")
+  .refine((d) => d.getTime() <= Date.now(), "Date of birth can't be in the future")
+  .refine(
+    (d) => d.getTime() >= Date.now() - 130 * 365.25 * 24 * 60 * 60 * 1000,
+    "Please enter a valid date of birth"
+  )
+  .optional();
+
 const SignupSchema = z.object({
-  name: z.string().trim().min(1).max(80),
+  firstName: NameSchema,
+  lastName: NameSchema,
+  dateOfBirth: DateOfBirthSchema,
   email: EmailSchema,
   password: PasswordSchema,
 });
@@ -63,6 +83,21 @@ const ClaimSchema = z.object({
   email: EmailSchema,
   password: PasswordSchema,
 });
+
+/**
+ * Turn the first Zod validation issue into a short, human-readable
+ * message for the `invalid_request` response body. Without this, the
+ * mobile client's `throwApiError` (lib/api.ts) falls back to a generic
+ * "couldn't create your account" message regardless of what was
+ * actually wrong — which is exactly what happened 2026-08-09 when the
+ * client and server briefly disagreed on the signup request shape (the
+ * error WAS a 400 invalid_request the whole time, just silently so).
+ */
+function zodErrorMessage(issues: z.ZodIssue[]): string {
+  const first = issues[0];
+  if (!first) return "Please check your information and try again.";
+  return first.message;
+}
 
 function toAuthRole(role: string): AuthRole {
   return role.toLowerCase() as AuthRole;
@@ -116,10 +151,15 @@ export async function accountRoutes(fastify: FastifyInstance) {
     if (!parse.success) {
       return reply.code(400).send({
         error: "invalid_request",
+        message: zodErrorMessage(parse.error.issues),
         details: parse.error.issues,
       });
     }
-    const { name, email, password } = parse.data;
+    const { firstName, lastName, dateOfBirth, email, password } = parse.data;
+    // `name` stays the single combined field every existing screen reads
+    // (greetings, family portal, chat prompts, etc.) — firstName/lastName
+    // are additive, not a replacement. See schema.prisma's doc comment.
+    const name = `${firstName} ${lastName}`.trim();
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
@@ -134,7 +174,15 @@ export async function accountRoutes(fastify: FastifyInstance) {
 
     const passwordHash = await hashPassword(password);
     const created = await db.user.create({
-      data: { name, email, passwordHash, role: "SENIOR" },
+      data: {
+        name,
+        firstName,
+        lastName,
+        dateOfBirth,
+        email,
+        passwordHash,
+        role: "SENIOR",
+      },
     });
 
     await issueVerificationEmail({
@@ -154,7 +202,15 @@ export async function accountRoutes(fastify: FastifyInstance) {
     request.log.info({ userId: created.id }, "signup created account");
 
     return reply.code(201).send({
-      user: { id: created.id, name: created.name, role, email },
+      user: {
+        id: created.id,
+        name: created.name,
+        firstName: created.firstName,
+        lastName: created.lastName,
+        dateOfBirth: created.dateOfBirth,
+        role,
+        email,
+      },
       token,
     });
   });
@@ -177,6 +233,7 @@ export async function accountRoutes(fastify: FastifyInstance) {
     if (!parse.success) {
       return reply.code(400).send({
         error: "invalid_request",
+        message: zodErrorMessage(parse.error.issues),
         details: parse.error.issues,
       });
     }
@@ -210,7 +267,15 @@ export async function accountRoutes(fastify: FastifyInstance) {
     request.log.info({ userId: user.id }, "login succeeded");
 
     return reply.send({
-      user: { id: user.id, name: user.name, role, email: user.email },
+      user: {
+        id: user.id,
+        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        dateOfBirth: user.dateOfBirth,
+        role,
+        email: user.email,
+      },
       token,
     });
   });
@@ -221,7 +286,10 @@ export async function accountRoutes(fastify: FastifyInstance) {
   fastify.post("/v1/auth/verify-email", async (request, reply) => {
     const parse = VerifyEmailSchema.safeParse(request.body);
     if (!parse.success) {
-      return reply.code(400).send({ error: "invalid_request" });
+      return reply.code(400).send({
+        error: "invalid_request",
+        message: zodErrorMessage(parse.error.issues),
+      });
     }
     const tokenHash = hashToken(parse.data.token);
 
@@ -263,7 +331,10 @@ export async function accountRoutes(fastify: FastifyInstance) {
 
     const parse = ForgotPasswordSchema.safeParse(request.body);
     if (!parse.success) {
-      return reply.code(400).send({ error: "invalid_request" });
+      return reply.code(400).send({
+        error: "invalid_request",
+        message: zodErrorMessage(parse.error.issues),
+      });
     }
 
     const user = await db.user.findUnique({ where: { email: parse.data.email } });
@@ -346,7 +417,15 @@ export async function accountRoutes(fastify: FastifyInstance) {
     request.log.info({ userId: updated.id }, "password reset succeeded");
 
     return reply.send({
-      user: { id: updated.id, name: updated.name, role, email: updated.email },
+      user: {
+        id: updated.id,
+        name: updated.name,
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        dateOfBirth: updated.dateOfBirth,
+        role,
+        email: updated.email,
+      },
       token: freshToken,
     });
   });

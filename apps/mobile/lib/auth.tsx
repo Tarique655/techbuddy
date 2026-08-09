@@ -41,6 +41,13 @@ const STORAGE_KEY = "techbuddy.user.v1";
 export type AuthUser = {
   id: string;
   name: string;
+  /** Split name fields from the mandatory-signup flow (2026-08-09+).
+   *  Older/anonymous accounts won't have these — fall back to `name`. */
+  firstName?: string | null;
+  lastName?: string | null;
+  /** ISO date string, date-of-birth. Optional, self-reported. Nothing
+   *  gates on this. */
+  dateOfBirth?: string | null;
   /** Set once the account has email+password — fresh signup/login, or an
    *  anonymous account that's been "claimed" from Settings. Undefined/null
    *  means still an anonymous, name-only account. */

@@ -77,7 +77,15 @@ export async function userRoutes(fastify: FastifyInstance) {
   fastify.get("/v1/users/me", async (request, reply) => {
     const user = await db.user.findUnique({
       where: { id: request.userId },
-      select: { id: true, name: true, role: true, email: true },
+      select: {
+        id: true,
+        name: true,
+        firstName: true,
+        lastName: true,
+        dateOfBirth: true,
+        role: true,
+        email: true,
+      },
     });
     if (!user) {
       return reply.code(404).send({ error: "user_not_found" });
@@ -86,6 +94,9 @@ export async function userRoutes(fastify: FastifyInstance) {
       user: {
         id: user.id,
         name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        dateOfBirth: user.dateOfBirth,
         role: user.role.toLowerCase(),
         email: user.email,
       },

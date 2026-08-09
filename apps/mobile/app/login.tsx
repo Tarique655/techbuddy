@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,10 +15,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { LargeButton } from "@/components/large-button";
+import { CheckboxRow } from "@/components/checkbox-row";
 import { ApiError, login } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useHaptics } from "@/lib/haptics";
 import { safeErrorMessage } from "@/lib/safe-error";
+import {
+  forgetPassword,
+  getRememberedEmail,
+  getRememberedPassword,
+  rememberEmail,
+  rememberPassword,
+} from "@/lib/remembered-credentials";
 
 /**
  * Email + password sign-in for a returning senior (new device, reinstall,
@@ -36,7 +44,32 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberPasswordChecked, setRememberPasswordChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Prefill from what was remembered on a previous signup/login. Email is
+  // always remembered automatically; password only if the checkbox was
+  // ticked last time — if we find one, the checkbox starts ticked too, so
+  // unticking-and-submitting reads as "stop remembering" rather than
+  // silently keeping the old value around.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [savedEmail, savedPassword] = await Promise.all([
+        getRememberedEmail(),
+        getRememberedPassword(),
+      ]);
+      if (cancelled) return;
+      if (savedEmail) setEmail(savedEmail);
+      if (savedPassword) {
+        setPassword(savedPassword);
+        setRememberPasswordChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function submit() {
     const trimmedEmail = email.trim();
@@ -48,6 +81,14 @@ export default function LoginScreen() {
       const { user, token } = await login({ email: trimmedEmail, password });
       // AuthGate redirects automatically once setSession writes state.
       setSession({ user: { id: user.id, name: user.name, email: user.email }, token });
+
+      // Best-effort, fire-and-forget — never block getting into the app.
+      void rememberEmail(trimmedEmail);
+      if (rememberPasswordChecked) {
+        void rememberPassword(password);
+      } else {
+        void forgetPassword();
+      }
     } catch (err) {
       setSubmitting(false);
       const message =
@@ -123,6 +164,16 @@ export default function LoginScreen() {
               editable={!submitting}
             />
 
+            <View style={styles.checkboxWrap}>
+              <CheckboxRow
+                checked={rememberPasswordChecked}
+                onToggle={setRememberPasswordChecked}
+                label="Remember my password on this phone"
+                helper="Fills it in automatically next time you sign in."
+                disabled={submitting}
+              />
+            </View>
+
             <Pressable
               onPress={() => {
                 haptics.selection();
@@ -182,7 +233,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#1A1F2C",
   },
-  forgotLink: { marginTop: 18, alignSelf: "flex-start", minHeight: 44, justifyContent: "center" },
+  checkboxWrap: { marginTop: 16 },
+  forgotLink: { marginTop: 12, alignSelf: "flex-start", minHeight: 44, justifyContent: "center" },
   forgotText: { fontSize: 16, color: "#2A6CF6", fontWeight: "600" },
   cta: { paddingTop: 32, alignItems: "center" },
   submittingBlock: {

@@ -23,6 +23,7 @@ import {
 } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
 import { usePremiumPurchase } from "@/lib/iap";
+import { forgetPassword } from "@/lib/remembered-credentials";
 import { ClaimAccountModal } from "@/components/claim-account-modal";
 import { InviteFamilyModal } from "@/components/invite-family-modal";
 import {
@@ -38,9 +39,40 @@ export default function SettingsScreen() {
   const { t, language, setLanguage } = useT();
   const { settings, setSetting } = useSettings();
   const haptics = useHaptics();
-  const { user } = useAuth();
+  const { user, setSession } = useAuth();
   const [inviteFamilyOpen, setInviteFamilyOpen] = useState(false);
   const [claimAccountOpen, setClaimAccountOpen] = useState(false);
+
+  // Sign-out is only offered once the account has email+password — an
+  // anonymous (name-only) senior has no way to sign back in, so signing
+  // them out would permanently strand them from their own history. Once
+  // they've added credentials (fresh mandatory signup, or "claimed" an
+  // older anonymous account), signing out and back in on the same or a
+  // different device works via /v1/auth/login.
+  function handleSignOut() {
+    haptics.selection();
+    Alert.alert(
+      "Sign out?",
+      "You'll need your email and password to sign back in.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign out",
+          style: "destructive",
+          onPress: () => {
+            // Stop offering the remembered password after an explicit
+            // sign-out — keeps the email prefilled on the login screen
+            // (low sensitivity) but drops the password (real credential
+            // material) rather than silently carrying it forward.
+            void forgetPassword();
+            setSession(null);
+            // AuthGate redirects to /onboarding automatically once
+            // setSession(null) clears the user.
+          },
+        },
+      ]
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -73,13 +105,29 @@ export default function SettingsScreen() {
             copy for now, same as the rest of the new account screens. */}
         <Section title="Account">
           {user?.email ? (
-            <View style={styles.familyRow}>
-              <View style={styles.familyText}>
-                <Text style={styles.familyLabel}>Signed in</Text>
-                <Text style={styles.familyDesc}>{user.email}</Text>
+            <>
+              <View style={styles.familyRow}>
+                <View style={styles.familyText}>
+                  <Text style={styles.familyLabel}>Signed in</Text>
+                  <Text style={styles.familyDesc}>{user.email}</Text>
+                </View>
+                <Ionicons name="checkmark-circle" size={22} color="#2A9D5C" />
               </View>
-              <Ionicons name="checkmark-circle" size={22} color="#2A9D5C" />
-            </View>
+
+              <View style={styles.divider} />
+
+              <Pressable
+                onPress={handleSignOut}
+                accessibilityRole="button"
+                accessibilityLabel="Sign out"
+                style={({ pressed }) => [styles.familyRow, pressed && styles.familyRowPressed]}
+              >
+                <View style={styles.familyText}>
+                  <Text style={[styles.familyLabel, styles.signOutLabel]}>Sign out</Text>
+                </View>
+                <Ionicons name="log-out-outline" size={22} color="#C8312D" />
+              </Pressable>
+            </>
           ) : (
             <Pressable
               onPress={() => {
@@ -412,13 +460,7 @@ function DevPremiumTestSection() {
         {busy ? (
           <ActivityIndicator size="small" color="#FFFFFF" />
         ) : (
-          <Text style={styles.devButtonText}>
-            {purchaseState.kind === "purchasing"
-              ? "Purchasing…"
-              : purchaseState.kind === "verifying"
-                ? "Verifying…"
-                : "Test Premium Purchase"}
-          </Text>
+          <Text style={styles.devButtonText}>Test Premium Purchase</Text>
         )}
       </Pressable>
 
@@ -934,6 +976,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#5A6173",
     lineHeight: 19,
+  },
+  signOutLabel: {
+    color: "#C8312D",
   },
 
   // Linked-family-members list (sits below the divider in the Family card).

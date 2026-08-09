@@ -214,6 +214,16 @@ async function authedFetch(
 export type AuthenticatedUser = {
   id: string;
   name: string;
+  /** Split name fields — only present on accounts created via the
+   *  mandatory-signup flow (2026-08-09 onward) or the pre-existing
+   *  anonymous accounts don't have these set. `name` is always present
+   *  and is the one every other screen should keep using; these are for
+   *  places that specifically want just the first name (e.g. greetings). */
+  firstName?: string | null;
+  lastName?: string | null;
+  /** ISO date string ("2026-08-09T00:00:00.000Z"), date-of-birth. Optional,
+   *  self-reported. Nothing gates on this. */
+  dateOfBirth?: string | null;
   role: "senior" | "family" | "technician";
   /** Present once the account has email+password (fresh signup, or an
    *  anonymous account that's been "claimed" — see claimAccount below). */
@@ -317,7 +327,11 @@ async function throwApiError(response: Response, fallback: string): Promise<neve
 export { ApiError };
 
 export async function signup(input: {
-  name: string;
+  firstName: string;
+  lastName: string;
+  /** "YYYY-MM-DD". Optional — omit entirely rather than sending a
+   *  partial/invalid value. */
+  dateOfBirth?: string;
   email: string;
   password: string;
 }): Promise<AuthResponse> {

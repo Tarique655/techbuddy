@@ -370,6 +370,7 @@ export async function accountRoutes(fastify: FastifyInstance) {
     if (!parse.success) {
       return reply.code(400).send({
         error: "invalid_request",
+        message: zodErrorMessage(parse.error.issues),
         details: parse.error.issues,
       });
     }
@@ -452,6 +453,7 @@ export async function accountRoutes(fastify: FastifyInstance) {
     if (!parse.success) {
       return reply.code(400).send({
         error: "invalid_request",
+        message: zodErrorMessage(parse.error.issues),
         details: parse.error.issues,
       });
     }

@@ -39,6 +39,32 @@ export type { DeviceKey, ImageInput, MessageRole, SessionStatus };
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000";
 
+/**
+ * Fire-and-forget warmup ping to /healthz.
+ *
+ * The API runs on Render's free tier, which sleeps after 15 minutes of
+ * inactivity. UptimeRobot pings every 5 minutes to keep it warm, but the
+ * brief window after a redeploy or right at boundaries can still cold-start.
+ *
+ * Hitting /healthz from the mobile app on launch overlaps the cold-start
+ * (up to ~30s on Render free) with the splash → onboarding → tutorial flow,
+ * so by the time the senior taps Get Help Now the server is hot.
+ *
+ * Intentionally fire-and-forget: never throws, never awaits, and uses no
+ * auth header. /healthz is allowlisted in apps/api/src/lib/auth.ts.
+ */
+export function warmUpApi(): void {
+  // Wrap in a try/catch around the call site too, just in case `fetch` itself
+  // is unavailable (extremely unlikely on RN, but defensive).
+  try {
+    void fetch(`${API_URL}/healthz`, { method: "GET" }).catch(() => {
+      /* swallow — purely opportunistic */
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
 // =============================================================================
 // Auth state (module-local, set by AuthProvider)
 // =============================================================================
@@ -189,6 +215,9 @@ export type AuthenticatedUser = {
   id: string;
   name: string;
   role: "senior" | "family" | "technician";
+  /** Present once the account has email+password (fresh signup, or an
+   *  anonymous account that's been "claimed" — see claimAccount below). */
+  email?: string | null;
 };
 
 export type CreateUserResponse = {
@@ -247,6 +276,141 @@ export async function exchangeAuthToken(userId: string): Promise<string> {
     throw new Error("Auth exchange returned no token");
   }
   return data.token;
+}
+
+// =============================================================================
+// Real accounts — email + password (ACCOUNTS_AND_PREMIUM_PLAN.md)
+// =============================================================================
+//
+// signup/login/resetPassword all return the same {user, token} shape as
+// createUser/exchangeAuthToken above — every path into the app ends up
+// producing one of these, and setSession() from lib/auth.tsx accepts it
+// uniformly.
+
+export type AuthResponse = { user: AuthenticatedUser; token: string };
+
+class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+/** Parse a JSON error body defensively — routes send {error, message}. */
+async function throwApiError(response: Response, fallback: string): Promise<never> {
+  let message = fallback;
+  let code: string | undefined;
+  try {
+    const body = (await response.json()) as { error?: string; message?: string };
+    if (body?.message) message = body.message;
+    code = body?.error;
+  } catch {
+    /* body wasn't JSON — use fallback */
+  }
+  throw new ApiError(message, response.status, code);
+}
+
+export { ApiError };
+
+export async function signup(input: {
+  name: string;
+  email: string;
+  password: string;
+}): Promise<AuthResponse> {
+  const response = await fetch(`${API_URL}/v1/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    await throwApiError(response, "Couldn't create your account. Please try again.");
+  }
+  return (await response.json()) as AuthResponse;
+}
+
+export async function login(input: {
+  email: string;
+  password: string;
+}): Promise<AuthResponse> {
+  const response = await fetch(`${API_URL}/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    await throwApiError(response, "That email or password isn't right.");
+  }
+  return (await response.json()) as AuthResponse;
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  const response = await fetch(`${API_URL}/v1/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) {
+    await throwApiError(response, "Something went wrong. Please try again.");
+  }
+}
+
+export async function resetPassword(input: {
+  token: string;
+  newPassword: string;
+}): Promise<AuthResponse> {
+  const response = await fetch(`${API_URL}/v1/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    await throwApiError(
+      response,
+      "This link has expired. Please request a new one."
+    );
+  }
+  return (await response.json()) as AuthResponse;
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  const response = await fetch(`${API_URL}/v1/auth/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  if (!response.ok) {
+    await throwApiError(
+      response,
+      "This link has expired. Please request a new one."
+    );
+  }
+}
+
+/**
+ * "Claim" an existing anonymous (name-only) account by attaching an
+ * email + password to it. Bearer-authed — attaches to whichever account
+ * is currently signed in. Does NOT return a new token (the existing
+ * session keeps working); the caller should just refresh the displayed
+ * user info.
+ */
+export async function claimAccount(input: {
+  email: string;
+  password: string;
+}): Promise<AuthenticatedUser> {
+  const response = await authedFetch(`${API_URL}/v1/auth/claim`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    await throwApiError(response, "Couldn't save your email. Please try again.");
+  }
+  const body = (await response.json()) as { user: AuthenticatedUser };
+  return body.user;
 }
 
 /**
@@ -604,6 +768,66 @@ export async function createFamilyInvite(): Promise<FamilyInvite> {
   }
   const data = (await response.json()) as { invite: FamilyInvite };
   return data.invite;
+}
+
+// ===========================================================================
+// Premium subscription (ACCOUNTS_AND_PREMIUM_PLAN.md — backend plumbing;
+// see lib/iap.ts for the client-side purchase flow that calls these).
+// ===========================================================================
+
+export type SubscriptionStatusResponse = {
+  active: boolean;
+  status: "ACTIVE" | "GRACE_PERIOD" | "EXPIRED" | "REVOKED" | null;
+  expiresAt: string | null;
+};
+
+/**
+ * Mint (or return the existing) appAccountToken for the signed-in user.
+ * MUST be called before starting a StoreKit purchase — the token gets
+ * embedded in the purchase request so Apple echoes it back on every
+ * future transaction/notification, which is how the backend joins an
+ * Apple transaction back to this account.
+ */
+export async function prepareSubscriptionPurchase(): Promise<string> {
+  const response = await authedFetch(`${API_URL}/v1/subscription/prepare-purchase`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) {
+    throw new Error(`Prepare purchase failed: ${response.status}`);
+  }
+  const body = (await response.json()) as { appAccountToken: string };
+  return body.appAccountToken;
+}
+
+/**
+ * Hand the backend the signed transaction StoreKit returned after a
+ * successful purchase (expo-iap's `purchase.purchaseToken` on iOS — that
+ * field carries the JWS transaction representation, not a raw token
+ * despite the name). Records the entitlement immediately rather than
+ * waiting for Apple's async server notification to arrive.
+ */
+export async function verifySubscriptionPurchase(
+  signedTransactionInfo: string
+): Promise<void> {
+  const response = await authedFetch(`${API_URL}/v1/subscription/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ signedTransactionInfo }),
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Subscription verify failed (${response.status}): ${body}`);
+  }
+}
+
+export async function getSubscriptionStatus(): Promise<SubscriptionStatusResponse> {
+  const response = await authedFetch(`${API_URL}/v1/subscription/status`);
+  if (!response.ok) {
+    throw new Error(`Subscription status failed: ${response.status}`);
+  }
+  return (await response.json()) as SubscriptionStatusResponse;
 }
 
 export { API_URL };

@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useRouter } from "expo-router";
+
 import { LargeButton } from "@/components/large-button";
 import { createUser } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -26,6 +28,7 @@ export default function OnboardingScreen() {
   const { t } = useT();
   const { setSession } = useAuth();
   const haptics = useHaptics();
+  const router = useRouter();
 
   const [step, setStep] = useState<Step>("welcome");
   const [name, setName] = useState("");
@@ -100,6 +103,24 @@ export default function OnboardingScreen() {
                   }}
                 />
               </View>
+
+              {/* Returning senior with an email+password account (fresh
+                  signup, or claimed from Settings on another device) —
+                  see ACCOUNTS_AND_PREMIUM_PLAN.md. English-only copy for
+                  now, same as the other new account screens. */}
+              <Pressable
+                onPress={() => {
+                  haptics.selection();
+                  router.push("/login");
+                }}
+                accessibilityRole="link"
+                style={styles.signInLink}
+                hitSlop={8}
+              >
+                <Text style={styles.signInText}>
+                  Already have an account? <Text style={styles.signInTextBold}>Sign in</Text>
+                </Text>
+              </Pressable>
             </>
           ) : (
             <>
@@ -195,6 +216,22 @@ const styles = StyleSheet.create({
   },
   cta: {
     paddingTop: 24,
+  },
+  signInLink: {
+    marginTop: 20,
+    alignSelf: "center",
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  signInText: {
+    fontSize: 16,
+    color: "#5A6173",
+    textAlign: "center",
+  },
+  signInTextBold: {
+    color: "#2A6CF6",
+    fontWeight: "700",
   },
   submittingBlock: {
     flexDirection: "row",

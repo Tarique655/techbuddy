@@ -12,6 +12,7 @@ import "react-native-reanimated";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { LanguageProvider } from "@/lib/i18n";
 import { SettingsProvider, useSettings } from "@/lib/settings";
+import { warmUpApi } from "@/lib/api";
 import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
@@ -40,6 +41,17 @@ Sentry.init({
  * dark/light flipping is a usability problem we want to avoid.
  */
 export default Sentry.wrap(function RootLayout() {
+  // Wake the API as soon as the app is mounted. Render free-tier sleeps
+  // after 15 min of inactivity; UptimeRobot keeps it warm with a 5-min
+  // ping cadence, but the few-second window after a Render redeploy can
+  // still cold-start. Firing /healthz from the device overlaps any
+  // remaining cold-start cost with the splash → onboarding → tutorial
+  // flow, so the senior's first real request lands on a warm server.
+  // Empty deps array — fires exactly once per process launch.
+  useEffect(() => {
+    warmUpApi();
+  }, []);
+
   return (
     <LanguageProvider>
       <SettingsProvider>
@@ -87,9 +99,17 @@ function AuthGate({ children }: { children: ReactNode }) {
     if (!ready) return;
     const inOnboarding = segments[0] === "onboarding";
     const inTutorial = segments[0] === "tutorial";
+    // Real-accounts screens (ACCOUNTS_AND_PREMIUM_PLAN.md) a signed-out
+    // senior can be on: signing in, resetting a forgotten password (from
+    // a deep link), or requesting that reset. Don't bounce any of these
+    // back to /onboarding — that would strand someone mid-flow.
+    const inUnauthedAccountFlow =
+      segments[0] === "login" ||
+      segments[0] === "forgot-password" ||
+      segments[0] === "reset-password";
 
     if (!user) {
-      if (!inOnboarding) router.replace("/onboarding");
+      if (!inOnboarding && !inUnauthedAccountFlow) router.replace("/onboarding");
       return;
     }
 

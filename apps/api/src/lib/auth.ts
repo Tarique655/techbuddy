@@ -72,6 +72,19 @@ function isAllowlisted(method: string, url: string): boolean {
   // allowlist it so the 410 reaches the client cleanly instead of the
   // pre-handler short-circuiting with a 401.
   if (method === "POST" && url === "/v1/auth/exchange") return true;
+  // Real accounts (ACCOUNTS_AND_PREMIUM_PLAN.md, 2026-08-09) — the caller
+  // has no JWT yet by definition for all of these EXCEPT /claim, which
+  // attaches an email+password to an ALREADY-authed anonymous account and
+  // therefore must NOT be allowlisted (it needs request.userId).
+  if (method === "POST" && url === "/v1/auth/signup") return true;
+  if (method === "POST" && url === "/v1/auth/login") return true;
+  if (method === "POST" && url === "/v1/auth/verify-email") return true;
+  if (method === "POST" && url === "/v1/auth/forgot-password") return true;
+  if (method === "POST" && url === "/v1/auth/reset-password") return true;
+  // App Store Server Notifications — Apple's server calls this directly,
+  // no user session exists. Authenticity comes from JWS signature
+  // verification inside the route handler (lib/appstore.ts), not Bearer.
+  if (method === "POST" && url === "/v1/webhooks/appstore") return true;
   return false;
 }
 

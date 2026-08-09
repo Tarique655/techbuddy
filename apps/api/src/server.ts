@@ -15,12 +15,14 @@ import * as Sentry from "@sentry/node";
 
 import { env } from "./lib/env.js";
 import { registerAuth } from "./lib/auth.js";
+import { accountRoutes } from "./routes/account.js";
 import { authRoutes } from "./routes/auth.js";
 import { bugReportRoutes } from "./routes/bug-reports.js";
 import { chatRoutes } from "./routes/chat.js";
 import { debugRoutes } from "./routes/debug.js";
 import { familyRoutes } from "./routes/family.js";
 import { sessionsRoutes } from "./routes/sessions.js";
+import { subscriptionRoutes } from "./routes/subscriptions.js";
 import { userContextRoutes } from "./routes/user-context.js";
 import { userRoutes } from "./routes/users.js";
 
@@ -92,12 +94,14 @@ fastify.get("/healthz", async () => ({
 }));
 
 await fastify.register(authRoutes);
+await fastify.register(accountRoutes);
 await fastify.register(userRoutes);
 await fastify.register(chatRoutes);
 await fastify.register(sessionsRoutes);
 await fastify.register(userContextRoutes);
 await fastify.register(bugReportRoutes);
 await fastify.register(familyRoutes);
+await fastify.register(subscriptionRoutes);
 await fastify.register(debugRoutes);
 
 try {

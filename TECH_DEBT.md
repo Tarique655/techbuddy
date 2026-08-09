@@ -2,11 +2,35 @@
 
 This file tracks shortcuts, deprecations, and follow-ups so they don't get forgotten. When you take a shortcut to ship, add it here. When you fix one, delete the entry.
 
-Last reviewed: 2026-05-06
+Last reviewed: 2026-08-09.
 
 ---
 
 ## Pending production-build tasks
+
+### New account screens are English-only
+
+**Context:** `login.tsx`, `forgot-password.tsx`, `reset-password.tsx`, `verify-email.tsx`, and the Settings "Add email & password" modal use hardcoded English strings instead of going through `lib/i18n.tsx`'s en/fr/es tables. The i18n file is ~1100 lines of parallel translation tables; adding ~20 new keys with real (not machine-placeholder) fr/es copy was out of scope for the session that shipped the feature.
+
+**Fix path:** add the new keys to all three language tables in `lib/i18n.tsx`, get real translations (not just English duplicated into fr/es slots), then swap the hardcoded strings in the five files above for `t("...")` calls.
+
+### Password reset / verify-email links only work opened on the same phone
+
+**Context:** Verification and password-reset emails link to `techbuddy://verify-email?token=...` and `techbuddy://reset-password?token=...` — a custom URL scheme, not a normal https link. There's no web fallback page, so if a senior (or a family member helping them) opens the email on a different device than the one with TechBuddy installed, tapping the link does nothing visible.
+
+**Fix path:** host a tiny fallback page (could live in `docs/`, same GitHub Pages setup as `privacy.md`/`terms.md`) at a real `https://` URL that either deep-links via a universal link / App Link, or just says "open this email on your phone." Worth doing before encouraging claim/signup more broadly than the current beta testers.
+
+### Apple root certs not bundled — App Store webhook verification is a no-op
+
+**Context:** `lib/appstore.ts` loads Apple's root CA certs from `apps/api/certs/*.cer` at runtime; that directory doesn't exist yet. Until it does (and the rest of the App Store Connect checklist in `ACCOUNTS_AND_PREMIUM_PLAN.md` §3.5 is done), `getVerifier()` always returns null and every subscription route responds with "not configured" (501) rather than doing anything.
+
+**Fix path:** follow the checklist in the plan doc — download root certs from https://www.apple.com/certificateauthority/, drop the `.cer` files in `apps/api/certs/`, set the `APP_STORE_*` env vars in Render.
+
+### Paywall screen not built; can't test purchases yet
+
+**Context:** `lib/iap.ts` (`usePremiumPurchase()`, added 2026-08-09) wires `expo-iap` end to end — prepare-purchase, requestPurchase, verify — but nothing in the app calls it. There's no paywall screen (deferred until the product decision on what Premium unlocks is made), and `EXPO_PUBLIC_PREMIUM_PRODUCT_ID` in `eas.json` is an empty placeholder until the App Store Connect product exists. Testing any of this end-to-end also needs an EAS development build — `expo-iap` ships native code and doesn't run in Expo Go.
+
+**Fix path:** (1) finish the App Store Connect checklist, fill in `EXPO_PUBLIC_PREMIUM_PRODUCT_ID` and the `APP_STORE_*` Render env vars, (2) `eas build --profile development --platform ios` and install it on a test device, (3) build the actual paywall screen calling `usePremiumPurchase()` once the product decision is made.
 
 Items that aren't shortcuts but DO need to happen the next time we cut a production build.
 
@@ -17,7 +41,7 @@ Items that aren't shortcuts but DO need to happen the next time we cut a product
 **Action when the next production build is queued:**
 
 ```powershell
-cd "C:\Users\Tariq\Documents\Claude\Projects\Senior IT Help\techbuddy\apps\mobile"
+cd "C:\Code\Claude\Projects\Senior IT Help\techbuddy\apps\mobile"
 eas update --branch production --message "JWT auth"
 ```
 

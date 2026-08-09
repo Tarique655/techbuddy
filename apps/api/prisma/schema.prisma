@@ -11,8 +11,14 @@
 //   IssueSummary — the structured triage JSON. Comes when we build the
 //                  /v1/sessions/:id/summarize endpoint.
 //   Image       — photo intake (Scenarios A/B in the project doc).
-//   FamilyLink  — link family members to a senior account.
-//   Subscription — Stripe-backed billing.
+//
+// Added 2026-08-09 (see ACCOUNTS_AND_PREMIUM_PLAN.md):
+//   User.email / passwordHash / emailVerifiedAt — real recoverable
+//     accounts, additive to the original anonymous name-only identity.
+//   EmailVerificationToken, PasswordResetToken — short-lived, hashed
+//     tokens for the email flows above.
+//   Subscription — StoreKit 2 entitlement state, kept in sync via
+//     client-verified transactions and Apple Server Notifications V2.
 
 generator client {
   provider = "prisma-client-js"
@@ -53,9 +59,35 @@ model User {
   /// schema migration is back-compat with the legacy X-User-Id path.
   tokenVersion Int @default(0) @map("token_version")
 
-  sessions   Session[]
-  contexts   UserContext[]
-  bugReports BugReport[]
+  /// Real accounts (ACCOUNTS_AND_PREMIUM_PLAN.md, 2026-08-09). Nullable
+  /// because the original anonymous name-only onboarding still exists —
+  /// a senior can use the app before "claiming" an email+password. Once
+  /// set, `email` is how they sign back in from a new device.
+  email           String?   @unique
+  /// bcryptjs hash. Null until the senior sets a password (fresh signup
+  /// via /v1/auth/signup, or claiming an existing anonymous account via
+  /// /v1/auth/claim). NEVER store or log the raw password anywhere.
+  passwordHash    String?   @map("password_hash")
+  /// Set when the senior clicks the link from the verification email.
+  /// We deliberately do NOT gate app access on this — see plan doc §2.3 —
+  /// only used to decide whether to nag about re-verifying later.
+  emailVerifiedAt DateTime? @map("email_verified_at")
+
+  /// Apple requires `appAccountToken` on a StoreKit purchase to be a
+  /// UUID — our own ids are cuids, so we can't pass request.userId
+  /// directly. This is a separate random UUID, minted lazily the first
+  /// time a purchase is initiated (see lib/appstore.ts), that the mobile
+  /// app embeds in the StoreKit purchase call. Apple echoes it back in
+  /// every transaction/notification, which is how the webhook resolves a
+  /// purchase back to a User row without trusting anything client-supplied.
+  appAccountToken String? @unique @map("app_account_token")
+
+  sessions      Session[]
+  contexts      UserContext[]
+  bugReports    BugReport[]
+  subscription  Subscription?
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
 
   // Family-portal links — a senior may be observed by many family members,
   // and a family member may have many seniors. Modeled as an explicit join
@@ -313,4 +345,84 @@ model FamilyInvite {
   @@index([createdByUserId, createdAt])
   @@index([expiresAt])
   @@map("family_invites")
+}
+
+// =============================================================================
+// REAL ACCOUNTS — email verification + password reset
+// =============================================================================
+// See ACCOUNTS_AND_PREMIUM_PLAN.md. Both token tables store only a SHA-256
+// hash of the token (lib/tokens.ts) — the raw token exists only in the
+// email link, so a DB leak alone can't be used to hijack a pending
+// verification/reset.
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  /// Set once the token is redeemed. A used-but-unexpired token must still
+  /// be rejected — this is what makes reset links single-use.
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// =============================================================================
+// PREMIUM SUBSCRIPTION — StoreKit 2 entitlement state
+// =============================================================================
+// Populated by two paths (see ACCOUNTS_AND_PREMIUM_PLAN.md §3.3):
+//   1. Client posts a verified transaction right after a purchase.
+//   2. Apple's App Store Server Notifications V2 webhook pushes lifecycle
+//      events (renewal, cancel, refund, billing retry) server-to-server.
+// Both funnel through the same upsert helper in lib/appstore.ts so the
+// two paths can't drift on how they interpret Apple's payloads.
+
+enum SubscriptionStatus {
+  ACTIVE
+  GRACE_PERIOD
+  EXPIRED
+  REVOKED
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  /// Apple's stable identity for a subscription, constant across renewals
+  /// and even across product changes (e.g. a future tier upgrade). This,
+  /// not `productId`, is the join key when reconciling notifications.
+  originalTransactionId String @unique @map("original_transaction_id")
+  /// App Store Connect subscription product id, e.g. "com.techbuddy.premium.monthly".
+  productId              String              @map("product_id")
+  status                 SubscriptionStatus  @default(ACTIVE)
+  autoRenewStatus        Boolean             @default(true) @map("auto_renew_status")
+  expiresAt              DateTime            @map("expires_at")
+  /// "Sandbox" | "Production" — carried through from Apple's payload so we
+  /// never accidentally treat a sandbox test purchase as a real one.
+  environment             String             @map("environment")
+  lastVerifiedAt          DateTime           @default(now()) @map("last_verified_at")
+  createdAt               DateTime           @default(now()) @map("created_at")
+  updatedAt               DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("subscriptions")
 }

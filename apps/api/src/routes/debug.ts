@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import * as Sentry from "@sentry/node";
 
+import { requestTestNotification } from "../lib/appstore.js";
+
 /**
  * Debug routes — used to verify external instrumentation (Sentry today,
  * possibly other monitoring later).
@@ -48,5 +50,34 @@ export async function debugRoutes(fastify: FastifyInstance): Promise<void> {
         flushed,
       },
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /v1/debug/appstore-test-notification
+  //
+  // Smoke test for the Premium subscription plumbing (ACCOUNTS_AND_PREMIUM_PLAN.md
+  // §3). Asks Apple to fire a test notification at our webhook — confirms
+  // the App Store Server API credentials, the webhook URL configured in
+  // App Store Connect, and JWS verification all work, WITHOUT needing a
+  // real sandbox purchase. Check Render logs for the
+  // "appstore webhook processed" line after calling this.
+  //
+  // Use for:
+  //   curl -H "X-User-Id: <id>" https://techbuddy-api.onrender.com/v1/debug/appstore-test-notification
+  // ---------------------------------------------------------------------------
+  fastify.get("/v1/debug/appstore-test-notification", async (request, reply) => {
+    try {
+      const token = await requestTestNotification();
+      request.log.info({ token }, "appstore test notification requested");
+      return reply.send({
+        ok: true,
+        testNotificationToken: token,
+        note: "Apple will POST to /v1/webhooks/appstore shortly — check Render logs.",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "unknown error";
+      request.log.error({ err: message }, "appstore test notification failed");
+      return reply.code(500).send({ ok: false, error: message });
+    }
   });
 }

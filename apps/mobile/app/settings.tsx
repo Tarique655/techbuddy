@@ -22,6 +22,7 @@ import {
   type FontScale,
 } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
+import { ClaimAccountModal } from "@/components/claim-account-modal";
 import { InviteFamilyModal } from "@/components/invite-family-modal";
 import {
   listMyFamilyLinks,
@@ -38,6 +39,7 @@ export default function SettingsScreen() {
   const haptics = useHaptics();
   const { user } = useAuth();
   const [inviteFamilyOpen, setInviteFamilyOpen] = useState(false);
+  const [claimAccountOpen, setClaimAccountOpen] = useState(false);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -64,6 +66,40 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Account ------------------------------------------------------
+            ACCOUNTS_AND_PREMIUM_PLAN.md — anonymous name-only accounts can
+            "claim" an email+password without losing anything. English-only
+            copy for now, same as the rest of the new account screens. */}
+        <Section title="Account">
+          {user?.email ? (
+            <View style={styles.familyRow}>
+              <View style={styles.familyText}>
+                <Text style={styles.familyLabel}>Signed in</Text>
+                <Text style={styles.familyDesc}>{user.email}</Text>
+              </View>
+              <Ionicons name="checkmark-circle" size={22} color="#2A9D5C" />
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => {
+                haptics.selection();
+                setClaimAccountOpen(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Add email and password"
+              style={({ pressed }) => [styles.familyRow, pressed && styles.familyRowPressed]}
+            >
+              <View style={styles.familyText}>
+                <Text style={styles.familyLabel}>Add email & password</Text>
+                <Text style={styles.familyDesc}>
+                  So you can sign in again if you get a new phone
+                </Text>
+              </View>
+              <Ionicons name="mail-outline" size={22} color="#2A6CF6" />
+            </Pressable>
+          )}
+        </Section>
+
         {/* Language --------------------------------------------------- */}
         <Section title={t("settings_section_language")}>
           <Segmented
@@ -286,6 +322,10 @@ export default function SettingsScreen() {
       <InviteFamilyModal
         visible={inviteFamilyOpen}
         onClose={() => setInviteFamilyOpen(false)}
+      />
+      <ClaimAccountModal
+        visible={claimAccountOpen}
+        onClose={() => setClaimAccountOpen(false)}
       />
     </SafeAreaView>
   );

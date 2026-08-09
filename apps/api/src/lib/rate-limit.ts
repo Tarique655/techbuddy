@@ -183,3 +183,62 @@ export function checkAuthExchangeRateLimit(ip: string): RateLimitDecision {
     AUTH_EXCHANGE_PER_HOUR
   );
 }
+
+// =============================================================================
+// Real-accounts rate limits (ACCOUNTS_AND_PREMIUM_PLAN.md, 2026-08-09).
+//
+// Signup and forgot-password are IP-scoped, same reasoning as invite/user
+// creation above. Login is the one exception worth calling out: it's
+// scoped per-IP only for v1, NOT per-email. A per-email lock would let an
+// attacker lock a KNOWN victim out of their own account just by failing
+// their password on purpose (a denial-of-service on the victim, not the
+// attacker). Per-IP is coarser but doesn't have that failure mode.
+// Revisit if credential stuffing becomes a real threat at this user count
+// — see plan doc §5.
+// =============================================================================
+
+const signupBuckets = new Map<string, WindowedBuckets>();
+const loginBuckets = new Map<string, WindowedBuckets>();
+const forgotPasswordBuckets = new Map<string, WindowedBuckets>();
+const claimAccountBuckets = new Map<string, WindowedBuckets>();
+
+const SIGNUP_PER_MINUTE = 5;
+const SIGNUP_PER_HOUR = 20;
+// Deliberately looser than signup — a real returning user might mistype
+// their password a few times in a row without it being an attack.
+const LOGIN_PER_MINUTE = 8;
+const LOGIN_PER_HOUR = 40;
+const FORGOT_PASSWORD_PER_MINUTE = 3;
+const FORGOT_PASSWORD_PER_HOUR = 10;
+const CLAIM_ACCOUNT_PER_MINUTE = 5;
+const CLAIM_ACCOUNT_PER_HOUR = 20;
+
+/** Rate-limit /v1/auth/signup attempts per source IP. */
+export function checkSignupRateLimit(ip: string): RateLimitDecision {
+  return checkBucket(signupBuckets, ip, SIGNUP_PER_MINUTE, SIGNUP_PER_HOUR);
+}
+
+/** Rate-limit /v1/auth/login attempts per source IP. */
+export function checkLoginRateLimit(ip: string): RateLimitDecision {
+  return checkBucket(loginBuckets, ip, LOGIN_PER_MINUTE, LOGIN_PER_HOUR);
+}
+
+/** Rate-limit /v1/auth/forgot-password attempts per source IP. */
+export function checkForgotPasswordRateLimit(ip: string): RateLimitDecision {
+  return checkBucket(
+    forgotPasswordBuckets,
+    ip,
+    FORGOT_PASSWORD_PER_MINUTE,
+    FORGOT_PASSWORD_PER_HOUR
+  );
+}
+
+/** Rate-limit /v1/auth/claim attempts per source IP. */
+export function checkClaimAccountRateLimit(ip: string): RateLimitDecision {
+  return checkBucket(
+    claimAccountBuckets,
+    ip,
+    CLAIM_ACCOUNT_PER_MINUTE,
+    CLAIM_ACCOUNT_PER_HOUR
+  );
+}

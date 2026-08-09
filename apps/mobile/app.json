@@ -63,7 +63,8 @@
           "speechRecognitionPermission": "TechBuddy needs speech recognition so it can turn your spoken words into text for Buddy."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": true,

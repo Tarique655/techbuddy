@@ -41,6 +41,10 @@ const STORAGE_KEY = "techbuddy.user.v1";
 export type AuthUser = {
   id: string;
   name: string;
+  /** Set once the account has email+password — fresh signup/login, or an
+   *  anonymous account that's been "claimed" from Settings. Undefined/null
+   *  means still an anonymous, name-only account. */
+  email?: string | null;
 };
 
 /** Combined session shape passed when signing in. Onboarding produces
@@ -59,6 +63,12 @@ type AuthContextValue = {
    * JWT atomically and updates the api module's auth state.
    */
   setSession: (next: AuthSession | null) => void;
+  /**
+   * Patch fields on the current user without touching the token or
+   * triggering a re-auth — used after claimAccount() attaches an
+   * email+password to an already-signed-in anonymous account.
+   */
+  updateUser: (patch: Partial<AuthUser>) => void;
   /** True after hydration completes. Wait for this before routing. */
   ready: boolean;
 };
@@ -230,9 +240,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateUser = useCallback((patch: Partial<AuthUser>) => {
+    setUserState((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      void persistUser(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, setSession, ready }),
-    [user, setSession, ready]
+    () => ({ user, setSession, updateUser, ready }),
+    [user, setSession, updateUser, ready]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

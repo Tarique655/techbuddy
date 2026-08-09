@@ -35,6 +35,7 @@ apps/desktop/out/
 !.vscode/extensions.json
 !.vscode/settings.example.json
 .idea/
+.claude/
 
 # OS
 .DS_Store

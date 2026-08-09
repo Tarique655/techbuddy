@@ -122,8 +122,15 @@ function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Tutorial already seen.
-    if (inOnboarding) router.replace("/");
+    // Tutorial already seen. Leave /onboarding, or any of the unauthed
+    // account screens (login, forgot-password, reset-password) — a
+    // successful sign-in lands here having just become authenticated
+    // while still sitting on one of those routes, and nothing else was
+    // sending them onward. Without this, sign-in "worked" (the session
+    // was persisted) but the screen never left, so the "Signing you
+    // in…" spinner spun forever until the next app reload re-ran this
+    // effect from scratch.
+    if (inOnboarding || inUnauthedAccountFlow) router.replace("/");
     // We deliberately don't redirect away from /tutorial here — the senior
     // may have opened it via the Settings replay link, in which case we
     // want them to stay until they tap Done or close.

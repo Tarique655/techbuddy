@@ -36,6 +36,42 @@ import { setAuthToken } from "./auth-token";
 
 export type { DeviceKey, ImageInput, MessageRole, SessionStatus };
 
+/**
+ * Plain `fetch()` never times out on its own — if the server hangs mid
+ * request (e.g. an old Render container draining while the new one boots
+ * during a deploy), a caller's "Signing you in…" spinner would spin
+ * forever with no error and no way out. Every request in this file that
+ * isn't already wrapped by `authedFetch` should go through this instead.
+ *
+ * 20s is generous enough to cover a Render free-tier cold start
+ * (~30s worst case would still be rough, but most cold starts resolve in
+ * under 20s once the warmup ping in warmUpApi() has had a head start) while
+ * still bounding the worst case for a senior staring at a spinner.
+ */
+const DEFAULT_TIMEOUT_MS = 20000;
+
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit = {},
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err) {
+    // Normalize the AbortError into something the callers' generic
+    // "Something went wrong" catch handlers render sensibly, while still
+    // being identifiable if a caller wants to special-case it later.
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("Request timed out. Check your connection and try again.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -188,7 +224,7 @@ async function authedFetch(
     // needs the NEW Bearer token that authHeaders() now returns.
     const headers = new Headers(init.headers);
     for (const [k, v] of Object.entries(authHeaders())) headers.set(k, v);
-    return fetch(input, { ...init, headers });
+    return fetchWithTimeout(input, { ...init, headers });
   };
 
   let response = await doRequest();
@@ -248,7 +284,7 @@ export type CreateUserResponse = {
 export async function createUser(input: {
   name: string;
 }): Promise<CreateUserResponse> {
-  const response = await fetch(`${API_URL}/v1/users`, {
+  const response = await fetchWithTimeout(`${API_URL}/v1/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -270,7 +306,7 @@ export async function createUser(input: {
  * to legacy-header behavior for the rest of the session.
  */
 export async function exchangeAuthToken(userId: string): Promise<string> {
-  const response = await fetch(`${API_URL}/v1/auth/exchange`, {
+  const response = await fetchWithTimeout(`${API_URL}/v1/auth/exchange`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId, audience: "techbuddy-mobile" }),
@@ -335,7 +371,7 @@ export async function signup(input: {
   email: string;
   password: string;
 }): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/v1/auth/signup`, {
+  const response = await fetchWithTimeout(`${API_URL}/v1/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -350,7 +386,7 @@ export async function login(input: {
   email: string;
   password: string;
 }): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/v1/auth/login`, {
+  const response = await fetchWithTimeout(`${API_URL}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -362,7 +398,7 @@ export async function login(input: {
 }
 
 export async function forgotPassword(email: string): Promise<void> {
-  const response = await fetch(`${API_URL}/v1/auth/forgot-password`, {
+  const response = await fetchWithTimeout(`${API_URL}/v1/auth/forgot-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -376,7 +412,7 @@ export async function resetPassword(input: {
   token: string;
   newPassword: string;
 }): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/v1/auth/reset-password`, {
+  const response = await fetchWithTimeout(`${API_URL}/v1/auth/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -391,7 +427,7 @@ export async function resetPassword(input: {
 }
 
 export async function verifyEmail(token: string): Promise<void> {
-  const response = await fetch(`${API_URL}/v1/auth/verify-email`, {
+  const response = await fetchWithTimeout(`${API_URL}/v1/auth/verify-email`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token }),

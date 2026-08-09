@@ -22,6 +22,7 @@ import {
   type FontScale,
 } from "@/lib/settings";
 import { useHaptics } from "@/lib/haptics";
+import { usePremiumPurchase } from "@/lib/iap";
 import { ClaimAccountModal } from "@/components/claim-account-modal";
 import { InviteFamilyModal } from "@/components/invite-family-modal";
 import {
@@ -99,6 +100,16 @@ export default function SettingsScreen() {
             </Pressable>
           )}
         </Section>
+
+        {/* TEMPORARY — dev-build-only test harness for the Premium
+            purchase flow (ACCOUNTS_AND_PREMIUM_PLAN.md §3). No real
+            paywall exists yet (what Premium unlocks isn't decided), so
+            this is the only way to exercise usePremiumPurchase() end to
+            end against a sandbox tester account. __DEV__ is false in any
+            TestFlight/App Store build, so this never ships to a real
+            senior. DELETE this section once the real paywall screen
+            exists — see TECH_DEBT.md. */}
+        {__DEV__ ? <DevPremiumTestSection /> : null}
 
         {/* Language --------------------------------------------------- */}
         <Section title={t("settings_section_language")}>
@@ -354,6 +365,74 @@ function Section({
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.sectionCard}>{children}</View>
     </View>
+  );
+}
+
+/**
+ * TEMPORARY dev-only harness for the Premium purchase flow — see the
+ * __DEV__ gate at its call site above for why this exists and when to
+ * delete it.
+ */
+function DevPremiumTestSection() {
+  const { connected, productId, status, refreshStatus, purchaseState, purchase } =
+    usePremiumPurchase();
+
+  const busy = purchaseState.kind === "purchasing" || purchaseState.kind === "verifying";
+
+  return (
+    <Section title="Test Premium (dev only)">
+      <Text style={styles.devLine}>
+        Product: {productId || "(EXPO_PUBLIC_PREMIUM_PRODUCT_ID not set)"}
+      </Text>
+      <Text style={styles.devLine}>
+        StoreKit connected: {connected ? "yes" : "no"}
+      </Text>
+      <Text style={styles.devLine}>
+        Status: {status ? (status.active ? `active (${status.status})` : "not active") : "loading…"}
+      </Text>
+      {purchaseState.kind === "error" ? (
+        <Text style={[styles.devLine, styles.devLineError]}>
+          Error: {purchaseState.message}
+        </Text>
+      ) : null}
+
+      <Pressable
+        onPress={() => {
+          void purchase();
+        }}
+        disabled={busy || !productId}
+        accessibilityRole="button"
+        accessibilityLabel="Test premium purchase"
+        style={({ pressed }) => [
+          styles.devButton,
+          (busy || !productId) && styles.devButtonDisabled,
+          pressed && !busy && styles.devButtonPressed,
+        ]}
+      >
+        {busy ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <Text style={styles.devButtonText}>
+            {purchaseState.kind === "purchasing"
+              ? "Purchasing…"
+              : purchaseState.kind === "verifying"
+                ? "Verifying…"
+                : "Test Premium Purchase"}
+          </Text>
+        )}
+      </Pressable>
+
+      <Pressable
+        onPress={() => {
+          void refreshStatus();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Refresh subscription status"
+        style={({ pressed }) => [styles.devButtonSecondary, pressed && styles.devButtonPressed]}
+      >
+        <Text style={styles.devButtonSecondaryText}>Refresh status</Text>
+      </Pressable>
+    </Section>
   );
 }
 
@@ -669,6 +748,53 @@ const styles = StyleSheet.create({
     backgroundColor: "#F6F7FB",
     borderRadius: 18,
     padding: 16,
+  },
+
+  // Dev-only Premium purchase test harness — DELETE alongside the
+  // DevPremiumTestSection component once the real paywall exists.
+  devLine: {
+    fontSize: 14,
+    color: "#5A6173",
+    marginBottom: 6,
+  },
+  devLineError: {
+    color: "#C8312D",
+    fontWeight: "600",
+  },
+  devButton: {
+    marginTop: 10,
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: "#2A6CF6",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  devButtonDisabled: {
+    backgroundColor: "#A9C5FB",
+  },
+  devButtonPressed: {
+    opacity: 0.85,
+  },
+  devButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  devButtonSecondary: {
+    marginTop: 10,
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#D6DAE5",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  devButtonSecondaryText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#2A6CF6",
   },
 
   // Segmented control

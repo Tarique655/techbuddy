@@ -101,16 +101,17 @@ const EnvSchema = z
           "JWT_SECRET is required in production. Generate via `openssl rand -base64 48` and set in Render dashboard.",
       });
     }
-    // Production must be able to actually send email — otherwise signup/
+    // Production should be able to actually send email — otherwise signup/
     // forgot-password silently no-op into the server console, which
-    // nobody's watching in prod.
+    // nobody's watching in prod. Deliberately a warning, NOT a boot-time
+    // failure: this took prod down entirely on 2026-08-09 (RESEND_API_KEY
+    // wasn't set yet) even though every other feature — chat, family
+    // portal, everything — doesn't depend on email at all. A missing
+    // Resend key should degrade one feature, not the whole API.
     if (data.NODE_ENV === "production" && !data.RESEND_API_KEY) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["RESEND_API_KEY"],
-        message:
-          "RESEND_API_KEY is required in production so verification/reset emails actually send.",
-      });
+      console.warn(
+        "⚠️  RESEND_API_KEY is not set — verification/reset emails will log to the console instead of sending. Set it in the Render dashboard when ready."
+      );
     }
   })
   .transform((data) => {

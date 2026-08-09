@@ -7,10 +7,11 @@ import { requestTestNotification } from "../lib/appstore.js";
  * Debug routes — used to verify external instrumentation (Sentry today,
  * possibly other monitoring later).
  *
- * These are auth-gated by the X-User-Id pre-handler in lib/auth.ts. Anyone
- * with a valid user id can trigger a Sentry event from here, which is fine
- * — the worst-case is a small amount of Sentry noise, and we'd rather have
- * a quick way to verify the pipeline than gate this further.
+ * These are auth-gated by the Bearer JWT pre-handler in lib/auth.ts (not
+ * allowlisted, so any authenticated user — including a throwaway one from
+ * POST /v1/users — can hit them). That's fine: worst case is a bit of
+ * Sentry noise or an extra Apple test-notification call, and we'd rather
+ * have a quick way to verify the pipeline than gate this further.
  *
  * If we ever want a stricter gate (e.g., for prod-only smoke tests), add a
  * `DEBUG_SECRET` env var and require it as a query param.
@@ -24,7 +25,7 @@ export async function debugRoutes(fastify: FastifyInstance): Promise<void> {
   //      slept right after the response (Render free tier in particular).
   //
   // Use for:
-  //   curl -H "X-User-Id: <id>" https://techbuddy-api.onrender.com/v1/debug/sentry-test
+  //   curl -H "Authorization: Bearer <jwt>" https://techbuddy-api.onrender.com/v1/debug/sentry-test
   fastify.get("/v1/debug/sentry-test", async (request, reply) => {
     const message = `TechBuddy backend Sentry test — user ${request.userId} at ${new Date().toISOString()}`;
     const err = new Error(message);
@@ -63,7 +64,7 @@ export async function debugRoutes(fastify: FastifyInstance): Promise<void> {
   // "appstore webhook processed" line after calling this.
   //
   // Use for:
-  //   curl -H "X-User-Id: <id>" https://techbuddy-api.onrender.com/v1/debug/appstore-test-notification
+  //   curl -H "Authorization: Bearer <jwt>" https://techbuddy-api.onrender.com/v1/debug/appstore-test-notification
   // ---------------------------------------------------------------------------
   fastify.get("/v1/debug/appstore-test-notification", async (request, reply) => {
     try {

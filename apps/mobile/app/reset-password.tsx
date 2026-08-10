@@ -17,6 +17,7 @@ import { LargeButton } from "@/components/large-button";
 import { ApiError, resetPassword } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useHaptics } from "@/lib/haptics";
+import { useT } from "@/lib/i18n";
 import { safeErrorMessage } from "@/lib/safe-error";
 
 /**
@@ -33,6 +34,7 @@ export default function ResetPasswordScreen() {
   const { token } = useLocalSearchParams<{ token?: string }>();
   const { setSession } = useAuth();
   const haptics = useHaptics();
+  const { t } = useT();
 
   const [newPassword, setNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -56,11 +58,11 @@ export default function ResetPasswordScreen() {
     } catch (err) {
       setSubmitting(false);
       const message =
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.";
+        err instanceof ApiError ? err.message : t("generic_error_message");
       console.error("[reset-password] failed", safeErrorMessage(err));
-      Alert.alert("Couldn't reset your password", message, [{ text: "OK" }]);
+      Alert.alert(t("reset_password_error_title"), message, [
+        { text: t("alert_ok") },
+      ]);
     }
   }
 
@@ -68,11 +70,8 @@ export default function ResetPasswordScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <View style={styles.errorBlock}>
-          <Text style={styles.title}>Link not recognized</Text>
-          <Text style={styles.body}>
-            This reset link looks incomplete. Please request a new one from the
-            sign-in screen.
-          </Text>
+          <Text style={styles.title}>{t("reset_password_link_invalid_title")}</Text>
+          <Text style={styles.body}>{t("reset_password_link_invalid_body")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -92,19 +91,19 @@ export default function ResetPasswordScreen() {
         >
           <View style={styles.heroBlock}>
             <Text style={styles.title}>
-              {done ? "You're all set" : "Choose a new password"}
+              {done ? t("all_set_title") : t("reset_password_title")}
             </Text>
             <Text style={styles.body}>
               {done
-                ? "Your password has been updated and you're signed in."
-                : "Pick a password with at least 8 characters."}
+                ? t("reset_password_done_body")
+                : t("reset_password_body")}
             </Text>
 
             {!done ? (
               <TextInput
                 value={newPassword}
                 onChangeText={setNewPassword}
-                placeholder="New password"
+                placeholder={t("reset_password_placeholder")}
                 placeholderTextColor="#8E96A8"
                 style={styles.input}
                 autoFocus
@@ -124,11 +123,11 @@ export default function ResetPasswordScreen() {
               {submitting ? (
                 <View style={styles.submittingBlock}>
                   <ActivityIndicator color="#2A6CF6" />
-                  <Text style={styles.submittingText}>Saving…</Text>
+                  <Text style={styles.submittingText}>{t("reset_password_saving")}</Text>
                 </View>
               ) : (
                 <LargeButton
-                  label="Save new password"
+                  label={t("reset_password_submit")}
                   onPress={submit}
                   variant="hero"
                 />

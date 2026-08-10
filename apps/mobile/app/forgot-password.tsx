@@ -17,11 +17,13 @@ import { useRouter } from "expo-router";
 import { LargeButton } from "@/components/large-button";
 import { forgotPassword } from "@/lib/api";
 import { useHaptics } from "@/lib/haptics";
+import { useT } from "@/lib/i18n";
 import { safeErrorMessage } from "@/lib/safe-error";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const haptics = useHaptics();
+  const { t } = useT();
 
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -40,9 +42,9 @@ export default function ForgotPasswordScreen() {
     } catch (err) {
       console.error("[forgot-password] failed", safeErrorMessage(err));
       Alert.alert(
-        "Something went wrong",
-        "Please check your connection and try again.",
-        [{ text: "OK" }]
+        t("onboarding_error_title"),
+        t("forgot_password_error_body"),
+        [{ text: t("alert_ok") }]
       );
     } finally {
       setSubmitting(false);
@@ -67,24 +69,21 @@ export default function ForgotPasswordScreen() {
               router.back();
             }}
             accessibilityRole="button"
-            accessibilityLabel="Back"
+            accessibilityLabel={t("account_back_a11y")}
             style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
             hitSlop={12}
           >
             <Text style={styles.backArrow}>‹</Text>
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>{t("back")}</Text>
           </Pressable>
 
           {sent ? (
             <View style={styles.heroBlock}>
-              <Text style={styles.title}>Check your email</Text>
-              <Text style={styles.body}>
-                If that email has a TechBuddy account, we've sent a link to reset
-                your password. Open the email on this phone and tap the link.
-              </Text>
+              <Text style={styles.title}>{t("forgot_password_sent_title")}</Text>
+              <Text style={styles.body}>{t("forgot_password_sent_body")}</Text>
               <View style={styles.cta}>
                 <LargeButton
-                  label="Back to sign in"
+                  label={t("forgot_password_back_to_signin")}
                   variant="secondary"
                   onPress={() => {
                     haptics.selection();
@@ -96,13 +95,10 @@ export default function ForgotPasswordScreen() {
           ) : (
             <>
               <View style={styles.heroBlock}>
-                <Text style={styles.title}>Reset your password</Text>
-                <Text style={styles.body}>
-                  Enter the email on your TechBuddy account. We'll send you a
-                  link to choose a new password.
-                </Text>
+                <Text style={styles.title}>{t("forgot_password_title")}</Text>
+                <Text style={styles.body}>{t("forgot_password_body")}</Text>
 
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label}>{t("field_email_label")}</Text>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
@@ -124,10 +120,10 @@ export default function ForgotPasswordScreen() {
                 {submitting ? (
                   <View style={styles.submittingBlock}>
                     <ActivityIndicator color="#2A6CF6" />
-                    <Text style={styles.submittingText}>Sending…</Text>
+                    <Text style={styles.submittingText}>{t("forgot_password_sending")}</Text>
                   </View>
                 ) : (
-                  <LargeButton label="Send reset link" onPress={submit} variant="hero" />
+                  <LargeButton label={t("forgot_password_submit")} onPress={submit} variant="hero" />
                 )}
               </View>
             </>

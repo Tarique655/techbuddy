@@ -389,6 +389,73 @@ const STRINGS = {
     family_links_remove_error_body:
       "Please check your internet connection and try again.",
     invite_family_close: "Done",
+
+    // Real accounts — login, forgot/reset password, verify email, and the
+    // Settings "Add email & password" (claim) modal. Added 2026-08-09 per
+    // TECH_DEBT.md's "New account screens are English-only" entry.
+    account_back_a11y: "Go back",
+    generic_error_message: "Something went wrong. Please try again.",
+    field_email_label: "Email",
+    field_password_label: "Password",
+    all_set_title: "You're all set",
+
+    login_title: "Sign in",
+    login_body: "Enter the email and password you set up for TechBuddy.",
+    login_password_placeholder: "Your password",
+    login_remember_password_label: "Remember my password on this phone",
+    login_remember_password_helper:
+      "Fills it in automatically next time you sign in.",
+    login_forgot_link: "Forgot your password?",
+    login_submit: "Sign in",
+    login_submitting: "Signing you in…",
+    login_error_title: "Couldn't sign in",
+
+    forgot_password_title: "Reset your password",
+    forgot_password_body:
+      "Enter the email on your TechBuddy account. We'll send you a link to choose a new password.",
+    forgot_password_submit: "Send reset link",
+    forgot_password_sending: "Sending…",
+    forgot_password_sent_title: "Check your email",
+    forgot_password_sent_body:
+      "If that email has a TechBuddy account, we've sent a link to reset your password. Open the email on this phone and tap the link.",
+    forgot_password_back_to_signin: "Back to sign in",
+    forgot_password_error_body: "Please check your connection and try again.",
+
+    reset_password_link_invalid_title: "Link not recognized",
+    reset_password_link_invalid_body:
+      "This reset link looks incomplete. Please request a new one from the sign-in screen.",
+    reset_password_title: "Choose a new password",
+    reset_password_body: "Pick a password with at least 8 characters.",
+    reset_password_placeholder: "New password",
+    reset_password_submit: "Save new password",
+    reset_password_saving: "Saving…",
+    reset_password_done_body:
+      "Your password has been updated and you're signed in.",
+    reset_password_error_title: "Couldn't reset your password",
+
+    verify_email_done_title: "Email confirmed",
+    verify_email_done_body: "Thanks — your email is verified.",
+    verify_email_error_title: "Link expired",
+    verify_email_error_body:
+      "This confirmation link is no longer valid. You can request a new one from Settings.",
+    verify_email_continue: "Continue",
+
+    claim_account_title: "Add email & password",
+    claim_account_body:
+      "This lets you sign back in if you ever get a new phone. Your chat history stays exactly as it is.",
+    claim_account_password_placeholder: "At least 8 characters",
+    claim_account_not_now: "Not now",
+    claim_account_done_body:
+      "Your email is saved. We've also sent a confirmation link — no need to act on it right away.",
+
+    settings_section_account: "Account",
+    settings_account_signed_in: "Signed in",
+    settings_account_sign_out: "Sign out",
+    settings_account_add_email_desc:
+      "So you can sign in again if you get a new phone",
+    settings_sign_out_confirm_title: "Sign out?",
+    settings_sign_out_confirm_body:
+      "You'll need your email and password to sign back in.",
   },
 
   fr: {
@@ -736,6 +803,74 @@ const STRINGS = {
     family_links_remove_error_body:
       "Veuillez vérifier votre connexion internet et réessayer.",
     invite_family_close: "Terminé",
+
+    account_back_a11y: "Retour",
+    generic_error_message: "Une erreur est survenue. Veuillez réessayer.",
+    field_email_label: "Courriel",
+    field_password_label: "Mot de passe",
+    all_set_title: "Tout est prêt",
+
+    login_title: "Se connecter",
+    login_body:
+      "Saisissez l'adresse courriel et le mot de passe que vous avez configurés pour TechBuddy.",
+    login_password_placeholder: "Votre mot de passe",
+    login_remember_password_label:
+      "Se souvenir de mon mot de passe sur ce téléphone",
+    login_remember_password_helper:
+      "Le remplit automatiquement la prochaine fois que vous vous connectez.",
+    login_forgot_link: "Mot de passe oublié ?",
+    login_submit: "Se connecter",
+    login_submitting: "Connexion en cours…",
+    login_error_title: "Impossible de se connecter",
+
+    forgot_password_title: "Réinitialiser votre mot de passe",
+    forgot_password_body:
+      "Saisissez l'adresse courriel de votre compte TechBuddy. Nous vous enverrons un lien pour choisir un nouveau mot de passe.",
+    forgot_password_submit: "Envoyer le lien",
+    forgot_password_sending: "Envoi en cours…",
+    forgot_password_sent_title: "Vérifiez vos courriels",
+    forgot_password_sent_body:
+      "Si cette adresse courriel correspond à un compte TechBuddy, nous avons envoyé un lien pour réinitialiser votre mot de passe. Ouvrez le courriel sur ce téléphone et touchez le lien.",
+    forgot_password_back_to_signin: "Retour à la connexion",
+    forgot_password_error_body:
+      "Veuillez vérifier votre connexion et réessayer.",
+
+    reset_password_link_invalid_title: "Lien non reconnu",
+    reset_password_link_invalid_body:
+      "Ce lien de réinitialisation semble incomplet. Veuillez en demander un nouveau depuis l'écran de connexion.",
+    reset_password_title: "Choisissez un nouveau mot de passe",
+    reset_password_body:
+      "Choisissez un mot de passe d'au moins 8 caractères.",
+    reset_password_placeholder: "Nouveau mot de passe",
+    reset_password_submit: "Enregistrer le nouveau mot de passe",
+    reset_password_saving: "Enregistrement…",
+    reset_password_done_body:
+      "Votre mot de passe a été mis à jour et vous êtes connecté.",
+    reset_password_error_title: "Impossible de réinitialiser votre mot de passe",
+
+    verify_email_done_title: "Courriel confirmé",
+    verify_email_done_body: "Merci — votre courriel est vérifié.",
+    verify_email_error_title: "Lien expiré",
+    verify_email_error_body:
+      "Ce lien de confirmation n'est plus valide. Vous pouvez en demander un nouveau depuis les paramètres.",
+    verify_email_continue: "Continuer",
+
+    claim_account_title: "Ajouter un courriel et un mot de passe",
+    claim_account_body:
+      "Cela vous permet de vous reconnecter si vous changez un jour de téléphone. Votre historique de conversation reste exactement le même.",
+    claim_account_password_placeholder: "Au moins 8 caractères",
+    claim_account_not_now: "Plus tard",
+    claim_account_done_body:
+      "Votre courriel est enregistré. Nous avons aussi envoyé un lien de confirmation — pas besoin d'agir tout de suite.",
+
+    settings_section_account: "Compte",
+    settings_account_signed_in: "Connecté",
+    settings_account_sign_out: "Se déconnecter",
+    settings_account_add_email_desc:
+      "Pour pouvoir vous reconnecter si vous changez de téléphone",
+    settings_sign_out_confirm_title: "Se déconnecter ?",
+    settings_sign_out_confirm_body:
+      "Vous aurez besoin de votre courriel et de votre mot de passe pour vous reconnecter.",
   },
 
   // ==========================================================================
@@ -1087,6 +1222,72 @@ const STRINGS = {
     family_links_remove_error_body:
       "Por favor, compruebe su conexión a Internet y vuelva a intentarlo.",
     invite_family_close: "Listo",
+
+    account_back_a11y: "Volver",
+    generic_error_message: "Algo salió mal. Por favor, inténtelo de nuevo.",
+    field_email_label: "Correo electrónico",
+    field_password_label: "Contraseña",
+    all_set_title: "Todo listo",
+
+    login_title: "Iniciar sesión",
+    login_body:
+      "Introduzca el correo electrónico y la contraseña que configuró para TechBuddy.",
+    login_password_placeholder: "Su contraseña",
+    login_remember_password_label: "Recordar mi contraseña en este teléfono",
+    login_remember_password_helper:
+      "Lo rellena automáticamente la próxima vez que inicie sesión.",
+    login_forgot_link: "¿Olvidó su contraseña?",
+    login_submit: "Iniciar sesión",
+    login_submitting: "Iniciando sesión…",
+    login_error_title: "No se pudo iniciar sesión",
+
+    forgot_password_title: "Restablecer su contraseña",
+    forgot_password_body:
+      "Introduzca el correo electrónico de su cuenta de TechBuddy. Le enviaremos un enlace para elegir una nueva contraseña.",
+    forgot_password_submit: "Enviar enlace",
+    forgot_password_sending: "Enviando…",
+    forgot_password_sent_title: "Revise su correo",
+    forgot_password_sent_body:
+      "Si ese correo tiene una cuenta de TechBuddy, le hemos enviado un enlace para restablecer su contraseña. Abra el correo en este teléfono y toque el enlace.",
+    forgot_password_back_to_signin: "Volver a iniciar sesión",
+    forgot_password_error_body:
+      "Por favor, compruebe su conexión e inténtelo de nuevo.",
+
+    reset_password_link_invalid_title: "Enlace no reconocido",
+    reset_password_link_invalid_body:
+      "Este enlace de restablecimiento parece incompleto. Solicite uno nuevo desde la pantalla de inicio de sesión.",
+    reset_password_title: "Elija una nueva contraseña",
+    reset_password_body: "Elija una contraseña de al menos 8 caracteres.",
+    reset_password_placeholder: "Nueva contraseña",
+    reset_password_submit: "Guardar nueva contraseña",
+    reset_password_saving: "Guardando…",
+    reset_password_done_body:
+      "Su contraseña se ha actualizado y ha iniciado sesión.",
+    reset_password_error_title: "No se pudo restablecer su contraseña",
+
+    verify_email_done_title: "Correo confirmado",
+    verify_email_done_body: "Gracias — su correo está verificado.",
+    verify_email_error_title: "Enlace caducado",
+    verify_email_error_body:
+      "Este enlace de confirmación ya no es válido. Puede solicitar uno nuevo desde Ajustes.",
+    verify_email_continue: "Continuar",
+
+    claim_account_title: "Añadir correo y contraseña",
+    claim_account_body:
+      "Esto le permite volver a iniciar sesión si algún día cambia de teléfono. Su historial de chat se queda exactamente igual.",
+    claim_account_password_placeholder: "Al menos 8 caracteres",
+    claim_account_not_now: "Ahora no",
+    claim_account_done_body:
+      "Su correo se ha guardado. También hemos enviado un enlace de confirmación — no hace falta que lo use ahora mismo.",
+
+    settings_section_account: "Cuenta",
+    settings_account_signed_in: "Sesión iniciada",
+    settings_account_sign_out: "Cerrar sesión",
+    settings_account_add_email_desc:
+      "Para que pueda volver a iniciar sesión si cambia de teléfono",
+    settings_sign_out_confirm_title: "¿Cerrar sesión?",
+    settings_sign_out_confirm_body:
+      "Necesitará su correo y contraseña para volver a iniciar sesión.",
   },
 } as const;
 

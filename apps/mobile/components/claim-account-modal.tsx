@@ -12,6 +12,7 @@ import {
 import { ApiError, claimAccount } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useHaptics } from "@/lib/haptics";
+import { useT } from "@/lib/i18n";
 import { safeErrorMessage } from "@/lib/safe-error";
 
 type Props = {
@@ -32,6 +33,7 @@ type Props = {
 export function ClaimAccountModal({ visible, onClose }: Props) {
   const { updateUser } = useAuth();
   const haptics = useHaptics();
+  const { t } = useT();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,9 +69,7 @@ export function ClaimAccountModal({ visible, onClose }: Props) {
     } catch (err) {
       console.error("[claim-account] failed", safeErrorMessage(err));
       setError(
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again."
+        err instanceof ApiError ? err.message : t("generic_error_message")
       );
     } finally {
       setSubmitting(false);
@@ -82,28 +82,22 @@ export function ClaimAccountModal({ visible, onClose }: Props) {
         <View style={styles.card}>
           {done ? (
             <>
-              <Text style={styles.title}>You're all set</Text>
-              <Text style={styles.body}>
-                Your email is saved. We've also sent a confirmation link — no
-                need to act on it right away.
-              </Text>
+              <Text style={styles.title}>{t("all_set_title")}</Text>
+              <Text style={styles.body}>{t("claim_account_done_body")}</Text>
               <Pressable
                 onPress={handleClose}
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
               >
-                <Text style={styles.primaryButtonText}>Done</Text>
+                <Text style={styles.primaryButtonText}>{t("invite_family_close")}</Text>
               </Pressable>
             </>
           ) : (
             <>
-              <Text style={styles.title}>Add email & password</Text>
-              <Text style={styles.body}>
-                This lets you sign back in if you ever get a new phone. Your
-                chat history stays exactly as it is.
-              </Text>
+              <Text style={styles.title}>{t("claim_account_title")}</Text>
+              <Text style={styles.body}>{t("claim_account_body")}</Text>
 
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t("field_email_label")}</Text>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
@@ -117,11 +111,11 @@ export function ClaimAccountModal({ visible, onClose }: Props) {
                 editable={!submitting}
               />
 
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t("field_password_label")}</Text>
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="At least 8 characters"
+                placeholder={t("claim_account_password_placeholder")}
                 placeholderTextColor="#8E96A8"
                 style={styles.input}
                 secureTextEntry
@@ -150,7 +144,7 @@ export function ClaimAccountModal({ visible, onClose }: Props) {
                     (!email.trim() || password.length < 8) && styles.primaryButtonDisabled,
                   ]}
                 >
-                  <Text style={styles.primaryButtonText}>Save</Text>
+                  <Text style={styles.primaryButtonText}>{t("about_me_save")}</Text>
                 </Pressable>
               )}
 
@@ -159,7 +153,7 @@ export function ClaimAccountModal({ visible, onClose }: Props) {
                 accessibilityRole="button"
                 style={({ pressed }) => [styles.secondaryButton, pressed && styles.secondaryButtonPressed]}
               >
-                <Text style={styles.secondaryButtonText}>Not now</Text>
+                <Text style={styles.secondaryButtonText}>{t("claim_account_not_now")}</Text>
               </Pressable>
             </>
           )}

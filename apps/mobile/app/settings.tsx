@@ -52,12 +52,12 @@ export default function SettingsScreen() {
   function handleSignOut() {
     haptics.selection();
     Alert.alert(
-      "Sign out?",
-      "You'll need your email and password to sign back in.",
+      t("settings_sign_out_confirm_title"),
+      t("settings_sign_out_confirm_body"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("about_me_cancel"), style: "cancel" },
         {
-          text: "Sign out",
+          text: t("settings_account_sign_out"),
           style: "destructive",
           onPress: () => {
             // Stop offering the remembered password after an explicit
@@ -101,14 +101,13 @@ export default function SettingsScreen() {
       >
         {/* Account ------------------------------------------------------
             ACCOUNTS_AND_PREMIUM_PLAN.md — anonymous name-only accounts can
-            "claim" an email+password without losing anything. English-only
-            copy for now, same as the rest of the new account screens. */}
-        <Section title="Account">
+            "claim" an email+password without losing anything. */}
+        <Section title={t("settings_section_account")}>
           {user?.email ? (
             <>
               <View style={styles.familyRow}>
                 <View style={styles.familyText}>
-                  <Text style={styles.familyLabel}>Signed in</Text>
+                  <Text style={styles.familyLabel}>{t("settings_account_signed_in")}</Text>
                   <Text style={styles.familyDesc}>{user.email}</Text>
                 </View>
                 <Ionicons name="checkmark-circle" size={22} color="#2A9D5C" />
@@ -119,11 +118,13 @@ export default function SettingsScreen() {
               <Pressable
                 onPress={handleSignOut}
                 accessibilityRole="button"
-                accessibilityLabel="Sign out"
+                accessibilityLabel={t("settings_account_sign_out")}
                 style={({ pressed }) => [styles.familyRow, pressed && styles.familyRowPressed]}
               >
                 <View style={styles.familyText}>
-                  <Text style={[styles.familyLabel, styles.signOutLabel]}>Sign out</Text>
+                  <Text style={[styles.familyLabel, styles.signOutLabel]}>
+                    {t("settings_account_sign_out")}
+                  </Text>
                 </View>
                 <Ionicons name="log-out-outline" size={22} color="#C8312D" />
               </Pressable>
@@ -135,13 +136,13 @@ export default function SettingsScreen() {
                 setClaimAccountOpen(true);
               }}
               accessibilityRole="button"
-              accessibilityLabel="Add email and password"
+              accessibilityLabel={t("claim_account_title")}
               style={({ pressed }) => [styles.familyRow, pressed && styles.familyRowPressed]}
             >
               <View style={styles.familyText}>
-                <Text style={styles.familyLabel}>Add email & password</Text>
+                <Text style={styles.familyLabel}>{t("claim_account_title")}</Text>
                 <Text style={styles.familyDesc}>
-                  So you can sign in again if you get a new phone
+                  {t("settings_account_add_email_desc")}
                 </Text>
               </View>
               <Ionicons name="mail-outline" size={22} color="#2A6CF6" />

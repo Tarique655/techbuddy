@@ -19,6 +19,7 @@ import { CheckboxRow } from "@/components/checkbox-row";
 import { ApiError, login } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useHaptics } from "@/lib/haptics";
+import { useT } from "@/lib/i18n";
 import { safeErrorMessage } from "@/lib/safe-error";
 import {
   forgetPassword,
@@ -31,16 +32,12 @@ import {
 /**
  * Email + password sign-in for a returning senior (new device, reinstall,
  * or anyone who's claimed their account — see ACCOUNTS_AND_PREMIUM_PLAN.md).
- *
- * NOTE: copy on this screen is English-only for now. The rest of the app
- * goes through lib/i18n's en/fr/es tables; extending that to the new
- * account screens is tracked as follow-up in TECH_DEBT.md rather than
- * done inline here, so as not to hand-translate untested copy.
  */
 export default function LoginScreen() {
   const router = useRouter();
   const { setSession } = useAuth();
   const haptics = useHaptics();
+  const { t } = useT();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -92,11 +89,9 @@ export default function LoginScreen() {
     } catch (err) {
       setSubmitting(false);
       const message =
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.";
+        err instanceof ApiError ? err.message : t("generic_error_message");
       console.error("[login] failed", safeErrorMessage(err));
-      Alert.alert("Couldn't sign in", message, [{ text: "OK" }]);
+      Alert.alert(t("login_error_title"), message, [{ text: t("alert_ok") }]);
     }
   }
 
@@ -118,21 +113,19 @@ export default function LoginScreen() {
               router.back();
             }}
             accessibilityRole="button"
-            accessibilityLabel="Back"
+            accessibilityLabel={t("account_back_a11y")}
             style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
             hitSlop={12}
           >
             <Text style={styles.backArrow}>‹</Text>
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>{t("back")}</Text>
           </Pressable>
 
           <View style={styles.heroBlock}>
-            <Text style={styles.title}>Sign in</Text>
-            <Text style={styles.body}>
-              Enter the email and password you set up for TechBuddy.
-            </Text>
+            <Text style={styles.title}>{t("login_title")}</Text>
+            <Text style={styles.body}>{t("login_body")}</Text>
 
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t("field_email_label")}</Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
@@ -148,11 +141,11 @@ export default function LoginScreen() {
               editable={!submitting}
             />
 
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>{t("field_password_label")}</Text>
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="Your password"
+              placeholder={t("login_password_placeholder")}
               placeholderTextColor="#8E96A8"
               style={styles.input}
               secureTextEntry
@@ -168,8 +161,8 @@ export default function LoginScreen() {
               <CheckboxRow
                 checked={rememberPasswordChecked}
                 onToggle={setRememberPasswordChecked}
-                label="Remember my password on this phone"
-                helper="Fills it in automatically next time you sign in."
+                label={t("login_remember_password_label")}
+                helper={t("login_remember_password_helper")}
                 disabled={submitting}
               />
             </View>
@@ -183,7 +176,7 @@ export default function LoginScreen() {
               style={styles.forgotLink}
               hitSlop={8}
             >
-              <Text style={styles.forgotText}>Forgot your password?</Text>
+              <Text style={styles.forgotText}>{t("login_forgot_link")}</Text>
             </Pressable>
           </View>
 
@@ -191,10 +184,10 @@ export default function LoginScreen() {
             {submitting ? (
               <View style={styles.submittingBlock}>
                 <ActivityIndicator color="#2A6CF6" />
-                <Text style={styles.submittingText}>Signing you in…</Text>
+                <Text style={styles.submittingText}>{t("login_submitting")}</Text>
               </View>
             ) : (
-              <LargeButton label="Sign in" onPress={submit} variant="hero" />
+              <LargeButton label={t("login_submit")} onPress={submit} variant="hero" />
             )}
           </View>
         </ScrollView>

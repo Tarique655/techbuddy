@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { LargeButton } from "@/components/large-button";
 import { verifyEmail } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { safeErrorMessage } from "@/lib/safe-error";
 
 /**
@@ -18,6 +19,7 @@ import { safeErrorMessage } from "@/lib/safe-error";
 export default function VerifyEmailScreen() {
   const { token } = useLocalSearchParams<{ token?: string }>();
   const router = useRouter();
+  const { t } = useT();
   const [state, setState] = useState<"checking" | "done" | "error">("checking");
 
   useEffect(() => {
@@ -40,22 +42,19 @@ export default function VerifyEmailScreen() {
           <ActivityIndicator color="#2A6CF6" size="large" />
         ) : state === "done" ? (
           <>
-            <Text style={styles.title}>Email confirmed</Text>
-            <Text style={styles.body}>Thanks — your email is verified.</Text>
+            <Text style={styles.title}>{t("verify_email_done_title")}</Text>
+            <Text style={styles.body}>{t("verify_email_done_body")}</Text>
           </>
         ) : (
           <>
-            <Text style={styles.title}>Link expired</Text>
-            <Text style={styles.body}>
-              This confirmation link is no longer valid. You can request a new
-              one from Settings.
-            </Text>
+            <Text style={styles.title}>{t("verify_email_error_title")}</Text>
+            <Text style={styles.body}>{t("verify_email_error_body")}</Text>
           </>
         )}
 
         {state !== "checking" ? (
           <View style={styles.cta}>
-            <LargeButton label="Continue" onPress={() => router.replace("/")} />
+            <LargeButton label={t("verify_email_continue")} onPress={() => router.replace("/")} />
           </View>
         ) : null}
       </View>

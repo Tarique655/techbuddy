@@ -456,6 +456,35 @@ const STRINGS = {
     settings_sign_out_confirm_title: "Sign out?",
     settings_sign_out_confirm_body:
       "You'll need your email and password to sign back in.",
+
+    // Onboarding "signup" step — the mandatory account-creation form every
+    // new senior fills in on first launch (ACCOUNTS_AND_PREMIUM_PLAN.md).
+    signup_already_have_account: "Already have an account?",
+    signup_title: "Let's get you set up",
+    signup_body:
+      "This creates your TechBuddy account so you can sign back in if you ever get a new phone.",
+    signup_first_name_label: "First name",
+    signup_last_name_label: "Last name",
+    signup_dob_label: "Date of birth (optional)",
+    signup_password_tip:
+      "Tip: write your password down somewhere safe, or take a photo of it, so you're never locked out.",
+    signup_submitting: "Creating your account…",
+    signup_submit: "Create Account",
+    signup_almost_there_title: "Almost there",
+    signup_missing_name_body: "Please enter your first and last name.",
+    signup_missing_email_body: "Please enter your email address.",
+    signup_password_too_short_body:
+      "Your password needs to be at least 8 characters.",
+    signup_dob_error_title: "Check your date of birth",
+    signup_dob_incomplete:
+      "Please fill in month, day, and year, or leave all three blank.",
+    signup_dob_invalid_month: "Please enter a valid month (1–12).",
+    signup_dob_invalid_day: "Please enter a valid day (1–31).",
+    signup_dob_invalid_year: "Please enter a valid birth year.",
+    signup_dob_invalid_date: "Please enter a valid date of birth.",
+    signup_error_title: "Couldn't create your account",
+    signup_error_fallback:
+      "Something went wrong creating your account. Please try again.",
   },
 
   fr: {
@@ -871,6 +900,33 @@ const STRINGS = {
     settings_sign_out_confirm_title: "Se déconnecter ?",
     settings_sign_out_confirm_body:
       "Vous aurez besoin de votre courriel et de votre mot de passe pour vous reconnecter.",
+
+    signup_already_have_account: "Vous avez déjà un compte ?",
+    signup_title: "Configurons votre compte",
+    signup_body:
+      "Ceci crée votre compte TechBuddy pour que vous puissiez vous reconnecter si vous changez un jour de téléphone.",
+    signup_first_name_label: "Prénom",
+    signup_last_name_label: "Nom de famille",
+    signup_dob_label: "Date de naissance (facultatif)",
+    signup_password_tip:
+      "Astuce : notez votre mot de passe quelque part en sécurité, ou prenez-le en photo, pour ne jamais être bloqué.",
+    signup_submitting: "Création de votre compte…",
+    signup_submit: "Créer un compte",
+    signup_almost_there_title: "Presque terminé",
+    signup_missing_name_body: "Veuillez saisir votre prénom et votre nom.",
+    signup_missing_email_body: "Veuillez saisir votre adresse courriel.",
+    signup_password_too_short_body:
+      "Votre mot de passe doit contenir au moins 8 caractères.",
+    signup_dob_error_title: "Vérifiez votre date de naissance",
+    signup_dob_incomplete:
+      "Veuillez remplir le mois, le jour et l'année, ou laisser les trois champs vides.",
+    signup_dob_invalid_month: "Veuillez saisir un mois valide (1–12).",
+    signup_dob_invalid_day: "Veuillez saisir un jour valide (1–31).",
+    signup_dob_invalid_year: "Veuillez saisir une année de naissance valide.",
+    signup_dob_invalid_date: "Veuillez saisir une date de naissance valide.",
+    signup_error_title: "Impossible de créer votre compte",
+    signup_error_fallback:
+      "Une erreur est survenue lors de la création de votre compte. Veuillez réessayer.",
   },
 
   // ==========================================================================
@@ -1288,6 +1344,33 @@ const STRINGS = {
     settings_sign_out_confirm_title: "¿Cerrar sesión?",
     settings_sign_out_confirm_body:
       "Necesitará su correo y contraseña para volver a iniciar sesión.",
+
+    signup_already_have_account: "¿Ya tiene una cuenta?",
+    signup_title: "Vamos a configurar su cuenta",
+    signup_body:
+      "Esto crea su cuenta de TechBuddy para que pueda volver a iniciar sesión si algún día cambia de teléfono.",
+    signup_first_name_label: "Nombre",
+    signup_last_name_label: "Apellidos",
+    signup_dob_label: "Fecha de nacimiento (opcional)",
+    signup_password_tip:
+      "Consejo: anote su contraseña en un lugar seguro, o hágale una foto, para no quedarse nunca sin acceso.",
+    signup_submitting: "Creando su cuenta…",
+    signup_submit: "Crear cuenta",
+    signup_almost_there_title: "Ya casi está",
+    signup_missing_name_body: "Introduzca su nombre y apellidos.",
+    signup_missing_email_body: "Introduzca su correo electrónico.",
+    signup_password_too_short_body:
+      "Su contraseña debe tener al menos 8 caracteres.",
+    signup_dob_error_title: "Revise su fecha de nacimiento",
+    signup_dob_incomplete:
+      "Rellene el mes, el día y el año, o deje los tres campos en blanco.",
+    signup_dob_invalid_month: "Introduzca un mes válido (1–12).",
+    signup_dob_invalid_day: "Introduzca un día válido (1–31).",
+    signup_dob_invalid_year: "Introduzca un año de nacimiento válido.",
+    signup_dob_invalid_date: "Introduzca una fecha de nacimiento válida.",
+    signup_error_title: "No se pudo crear su cuenta",
+    signup_error_fallback:
+      "Algo salió mal al crear su cuenta. Por favor, inténtelo de nuevo.",
   },
 } as const;
 

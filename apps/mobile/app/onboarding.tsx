@@ -19,7 +19,7 @@ import { LargeButton } from "@/components/large-button";
 import { CheckboxRow } from "@/components/checkbox-row";
 import { ApiError, signup } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useT } from "@/lib/i18n";
+import { useT, type StringKey } from "@/lib/i18n";
 import { useHaptics } from "@/lib/haptics";
 import { safeErrorMessage } from "@/lib/safe-error";
 import {
@@ -30,7 +30,12 @@ import {
 
 type Step = "welcome" | "signup";
 
-type DobResult = { ok: true; value?: string } | { ok: false; message: string };
+// `message` is an i18n key, not literal text, so the caller can translate it
+// with whatever language is currently active — this function has no access
+// to `t()` itself (it's a plain, easily-testable pure function).
+type DobResult =
+  | { ok: true; value?: string }
+  | { ok: false; message: StringKey };
 
 /**
  * Combine the three MM/DD/YYYY fields into a "YYYY-MM-DD" string for the
@@ -45,11 +50,7 @@ function buildDateOfBirth(month: string, day: string, year: string): DobResult {
 
   if (!m && !d && !y) return { ok: true, value: undefined };
   if (!m || !d || !y) {
-    return {
-      ok: false,
-      message:
-        "Please fill in month, day, and year, or leave all three blank.",
-    };
+    return { ok: false, message: "signup_dob_incomplete" };
   }
 
   const mm = Number(m);
@@ -58,23 +59,23 @@ function buildDateOfBirth(month: string, day: string, year: string): DobResult {
   const now = new Date();
 
   if (!Number.isInteger(mm) || mm < 1 || mm > 12) {
-    return { ok: false, message: "Please enter a valid month (1–12)." };
+    return { ok: false, message: "signup_dob_invalid_month" };
   }
   if (!Number.isInteger(dd) || dd < 1 || dd > 31) {
-    return { ok: false, message: "Please enter a valid day (1–31)." };
+    return { ok: false, message: "signup_dob_invalid_day" };
   }
   if (
     !Number.isInteger(yyyy) ||
     yyyy < now.getFullYear() - 130 ||
     yyyy > now.getFullYear()
   ) {
-    return { ok: false, message: "Please enter a valid birth year." };
+    return { ok: false, message: "signup_dob_invalid_year" };
   }
 
   const iso = `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
   const parsed = new Date(`${iso}T00:00:00.000Z`);
   if (Number.isNaN(parsed.getTime()) || parsed.getTime() > now.getTime()) {
-    return { ok: false, message: "Please enter a valid date of birth." };
+    return { ok: false, message: "signup_dob_invalid_date" };
   }
 
   return { ok: true, value: iso };
@@ -91,9 +92,6 @@ function buildDateOfBirth(month: string, day: string, year: string): DobResult {
  * Existing anonymous accounts created before this change are untouched —
  * they keep working exactly as they did, and can still add email &
  * password later from Settings ("Add email & password", claim-account-modal.tsx).
- *
- * The "signup" step's copy is English-only, same as the other new account
- * screens (login.tsx, forgot-password.tsx, etc.) — see TECH_DEBT.md.
  */
 export default function OnboardingScreen() {
   const { t } = useT();
@@ -127,31 +125,31 @@ export default function OnboardingScreen() {
     // reads as "broken" to a senior, especially since LargeButton has no
     // disabled/greyed-out visual state to hint at why nothing happened.
     if (!trimmedFirst || !trimmedLast) {
-      Alert.alert(
-        "Almost there",
-        "Please enter your first and last name.",
-        [{ text: "OK" }]
-      );
+      Alert.alert(t("signup_almost_there_title"), t("signup_missing_name_body"), [
+        { text: t("alert_ok") },
+      ]);
       return;
     }
     if (!trimmedEmail) {
-      Alert.alert("Almost there", "Please enter your email address.", [
-        { text: "OK" },
+      Alert.alert(t("signup_almost_there_title"), t("signup_missing_email_body"), [
+        { text: t("alert_ok") },
       ]);
       return;
     }
     if (password.length < 8) {
       Alert.alert(
-        "Almost there",
-        "Your password needs to be at least 8 characters.",
-        [{ text: "OK" }]
+        t("signup_almost_there_title"),
+        t("signup_password_too_short_body"),
+        [{ text: t("alert_ok") }]
       );
       return;
     }
 
     const dob = buildDateOfBirth(birthMonth, birthDay, birthYear);
     if (!dob.ok) {
-      Alert.alert("Check your date of birth", dob.message, [{ text: "OK" }]);
+      Alert.alert(t("signup_dob_error_title"), t(dob.message), [
+        { text: t("alert_ok") },
+      ]);
       return;
     }
 
@@ -191,10 +189,8 @@ export default function OnboardingScreen() {
       setSubmitting(false);
       console.error("[onboarding] signup failed", safeErrorMessage(err));
       const message =
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong creating your account. Please try again.";
-      Alert.alert("Couldn't create your account", message, [{ text: "OK" }]);
+        err instanceof ApiError ? err.message : t("signup_error_fallback");
+      Alert.alert(t("signup_error_title"), message, [{ text: t("alert_ok") }]);
     }
   }
 
@@ -243,8 +239,7 @@ export default function OnboardingScreen() {
 
               {/* Returning senior with an email+password account (fresh
                   signup, or claimed from Settings on another device) —
-                  see ACCOUNTS_AND_PREMIUM_PLAN.md. English-only copy for
-                  now, same as the other new account screens. */}
+                  see ACCOUNTS_AND_PREMIUM_PLAN.md. */}
               <Pressable
                 onPress={() => {
                   haptics.selection();
@@ -255,24 +250,22 @@ export default function OnboardingScreen() {
                 hitSlop={8}
               >
                 <Text style={styles.signInText}>
-                  Already have an account? <Text style={styles.signInTextBold}>Sign in</Text>
+                  {t("signup_already_have_account")}{" "}
+                  <Text style={styles.signInTextBold}>{t("login_submit")}</Text>
                 </Text>
               </Pressable>
             </>
           ) : (
             <>
               <View style={styles.formBlock}>
-                <Text style={styles.title}>Let's get you set up</Text>
-                <Text style={styles.body}>
-                  This creates your TechBuddy account so you can sign back
-                  in if you ever get a new phone.
-                </Text>
+                <Text style={styles.title}>{t("signup_title")}</Text>
+                <Text style={styles.body}>{t("signup_body")}</Text>
 
-                <Text style={styles.label}>First name</Text>
+                <Text style={styles.label}>{t("signup_first_name_label")}</Text>
                 <TextInput
                   value={firstName}
                   onChangeText={setFirstName}
-                  placeholder="First name"
+                  placeholder={t("signup_first_name_label")}
                   placeholderTextColor="#8E96A8"
                   style={styles.input}
                   autoFocus
@@ -284,11 +277,11 @@ export default function OnboardingScreen() {
                   maxLength={50}
                 />
 
-                <Text style={styles.label}>Last name</Text>
+                <Text style={styles.label}>{t("signup_last_name_label")}</Text>
                 <TextInput
                   value={lastName}
                   onChangeText={setLastName}
-                  placeholder="Last name"
+                  placeholder={t("signup_last_name_label")}
                   placeholderTextColor="#8E96A8"
                   style={styles.input}
                   autoCapitalize="words"
@@ -299,7 +292,7 @@ export default function OnboardingScreen() {
                   maxLength={50}
                 />
 
-                <Text style={styles.label}>Date of birth (optional)</Text>
+                <Text style={styles.label}>{t("signup_dob_label")}</Text>
                 <View style={styles.dobRow}>
                   <TextInput
                     value={birthMonth}
@@ -341,7 +334,7 @@ export default function OnboardingScreen() {
                   />
                 </View>
 
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label}>{t("field_email_label")}</Text>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
@@ -356,11 +349,11 @@ export default function OnboardingScreen() {
                   editable={!submitting}
                 />
 
-                <Text style={styles.label}>Password</Text>
+                <Text style={styles.label}>{t("field_password_label")}</Text>
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="At least 8 characters"
+                  placeholder={t("claim_account_password_placeholder")}
                   placeholderTextColor="#8E96A8"
                   style={styles.input}
                   secureTextEntry
@@ -371,17 +364,14 @@ export default function OnboardingScreen() {
                   onSubmitEditing={submitSignup}
                   editable={!submitting}
                 />
-                <Text style={styles.passwordTip}>
-                  Tip: write your password down somewhere safe, or take a
-                  photo of it, so you're never locked out.
-                </Text>
+                <Text style={styles.passwordTip}>{t("signup_password_tip")}</Text>
 
                 <View style={styles.checkboxWrap}>
                   <CheckboxRow
                     checked={rememberPasswordChecked}
                     onToggle={setRememberPasswordChecked}
-                    label="Remember my password on this phone"
-                    helper="Fills it in automatically next time you sign in."
+                    label={t("login_remember_password_label")}
+                    helper={t("login_remember_password_helper")}
                     disabled={submitting}
                   />
                 </View>
@@ -391,16 +381,14 @@ export default function OnboardingScreen() {
                 {submitting ? (
                   <View style={styles.submittingBlock}>
                     <ActivityIndicator color="#2A6CF6" />
-                    <Text style={styles.submittingText}>
-                      Creating your account…
-                    </Text>
+                    <Text style={styles.submittingText}>{t("signup_submitting")}</Text>
                   </View>
                 ) : (
                   <LargeButton
                     variant="hero"
-                    label="Create Account"
+                    label={t("signup_submit")}
                     onPress={submitSignup}
-                    accessibilityLabel="Create account"
+                    accessibilityLabel={t("signup_submit")}
                   />
                 )}
               </View>

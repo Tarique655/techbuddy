@@ -8,12 +8,6 @@ Last reviewed: 2026-08-09.
 
 ## Pending production-build tasks
 
-### New account screens are English-only
-
-**Context:** `login.tsx`, `forgot-password.tsx`, `reset-password.tsx`, `verify-email.tsx`, and the Settings "Add email & password" modal use hardcoded English strings instead of going through `lib/i18n.tsx`'s en/fr/es tables. The i18n file is ~1100 lines of parallel translation tables; adding ~20 new keys with real (not machine-placeholder) fr/es copy was out of scope for the session that shipped the feature.
-
-**Fix path:** add the new keys to all three language tables in `lib/i18n.tsx`, get real translations (not just English duplicated into fr/es slots), then swap the hardcoded strings in the five files above for `t("...")` calls.
-
 ### Password reset / verify-email links only work opened on the same phone
 
 **Context:** Verification and password-reset emails link to `techbuddy://verify-email?token=...` and `techbuddy://reset-password?token=...` — a custom URL scheme, not a normal https link. There's no web fallback page, so if a senior (or a family member helping them) opens the email on a different device than the one with TechBuddy installed, tapping the link does nothing visible.
